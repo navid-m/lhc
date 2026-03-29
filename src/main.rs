@@ -51,14 +51,21 @@ fn main() {
         None
     };
     let mut starter_box = comfy_table::Table::new();
+
     starter_box.load_preset(comfy_table::presets::UTF8_HORIZONTAL_ONLY);
+
     starter_box.add_row(vec![comfy_table::Cell::new(format!(
         "Server: {}",
         server_path
     ))]);
+    starter_box.add_row(vec![comfy_table::Cell::new(format!(
+        "Language: {}",
+        language.clone().unwrap().to_string()
+    ))]);
     starter_box.column_mut(0).unwrap().set_constraint(
         comfy_table::ColumnConstraint::LowerBoundary(comfy_table::Width::Percentage(46)),
     );
+
     eprintln!("{}", starter_box.to_string());
 
     let mut health_checker =
