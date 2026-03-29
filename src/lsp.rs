@@ -28,41 +28,77 @@ pub struct ServerCapabilities {
     pub signature_help_provider: bool,
     pub completion_provider: bool,
     pub definition_provider: bool,
+    pub type_definition_provider: bool,
+    pub implementation_provider: bool,
     pub references_provider: bool,
     pub document_symbol_provider: bool,
+    pub workspace_symbol_provider: bool,
     pub document_formatting_provider: bool,
     pub code_action_provider: bool,
     pub rename_provider: bool,
+    pub prepare_rename_provider: bool,
     pub inlay_hint_provider: bool,
-    pub workspace_symbol_provider: bool,
+    pub code_lens_provider: bool,
+    pub semantic_tokens_provider: bool,
+    pub folding_range_provider: bool,
+    pub linked_editing_range_provider: bool,
+    pub selection_range_provider: bool,
+    pub document_highlight_provider: bool,
+    pub publish_diagnostics_provider: bool,
+    pub execute_command_provider: bool,
+    pub did_change_configuration_provider: bool,
+    pub did_change_workspace_folders_provider: bool,
 }
 
 impl ServerCapabilities {
     pub fn from_value(value: &Value) -> Self {
-        let mut caps = ServerCapabilities::default();
-
         let Some(obj) = value.as_object() else {
-            return caps;
+            return ServerCapabilities::default();
         };
 
         let Some(capabilities) = obj.get("capabilities") else {
-            return caps;
+            return ServerCapabilities::default();
         };
 
         let Some(caps_obj) = capabilities.as_object() else {
-            return caps;
+            return ServerCapabilities::default();
         };
+
+        let mut caps = ServerCapabilities::default();
 
         caps.hover_provider = is_truthy(caps_obj.get("hoverProvider"));
         caps.signature_help_provider = caps_obj.get("signatureHelpProvider").is_some();
         caps.completion_provider = caps_obj.get("completionProvider").is_some();
         caps.definition_provider = is_truthy(caps_obj.get("definitionProvider"));
+        caps.type_definition_provider = is_truthy(caps_obj.get("typeDefinitionProvider"));
+        caps.implementation_provider = is_truthy(caps_obj.get("implementationProvider"));
         caps.references_provider = is_truthy(caps_obj.get("referencesProvider"));
         caps.document_symbol_provider = is_truthy(caps_obj.get("documentSymbolProvider"));
         caps.document_formatting_provider = is_truthy(caps_obj.get("documentFormattingProvider"));
         caps.code_action_provider = is_truthy(caps_obj.get("codeActionProvider"));
         caps.rename_provider = is_truthy(caps_obj.get("renameProvider"));
+        caps.prepare_rename_provider = is_truthy(caps_obj.get("prepareRenameProvider"));
         caps.inlay_hint_provider = is_truthy(caps_obj.get("inlayHintProvider"));
+        caps.code_lens_provider = is_truthy(caps_obj.get("codeLensProvider"));
+        caps.semantic_tokens_provider = caps_obj.get("semanticTokensProvider").is_some();
+        caps.folding_range_provider = caps_obj.get("foldingRangeProvider").is_some();
+        caps.linked_editing_range_provider = caps_obj.get("linkedEditingRangeProvider").is_some();
+        caps.selection_range_provider = caps_obj.get("selectionRangeProvider").is_some();
+        caps.document_highlight_provider = is_truthy(caps_obj.get("documentHighlightProvider"));
+        caps.publish_diagnostics_provider = caps_obj.get("publishDiagnosticsProvider").is_some();
+        caps.execute_command_provider = caps_obj.get("executeCommandProvider").is_some();
+        caps.did_change_configuration_provider = caps_obj
+            .get("workspace")
+            .and_then(|w| w.as_object())
+            .and_then(|w| w.get("workspaceFolders"))
+            .map(|wf| !wf.is_null())
+            .unwrap_or(false);
+        caps.did_change_workspace_folders_provider = caps_obj
+            .get("workspace")
+            .and_then(|w| w.as_object())
+            .and_then(|w| w.get("workspaceFolders"))
+            .map(|wf| !wf.is_null())
+            .unwrap_or(false);
 
         if let Some(ws) = caps_obj.get("workspace") {
             if let Some(ws_obj) = ws.as_object() {
@@ -193,16 +229,12 @@ impl Client {
 
     fn try_parse_message(&mut self) -> std::io::Result<Option<Value>> {
         let data = &self.read_buf[..];
-
-        // Find the header/body separator
         let sep = match memmem::find(data, b"\r\n\r\n") {
             Some(pos) => pos,
             None => return Ok(None),
         };
 
         let header = String::from_utf8_lossy(&data[..sep]);
-
-        // Parse Content-Length
         let cl_start = header.find("Content-Length: ").ok_or_else(|| {
             std::io::Error::new(std::io::ErrorKind::InvalidData, "No Content-Length")
         })?;
@@ -227,7 +259,6 @@ impl Client {
         let value: Value = serde_json::from_slice(body)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
 
-        // Consume the bytes
         self.read_buf.drain(..body_start + content_length);
 
         Ok(Some(value))
@@ -243,12 +274,10 @@ impl Client {
                 None => return Ok(None),
             };
 
-            // Check if this is the response we want
             let Some(obj) = msg.as_object() else {
                 continue;
             };
 
-            // Skip notifications (no id field or id is null)
             let Some(msg_id) = obj.get("id") else {
                 continue;
             };

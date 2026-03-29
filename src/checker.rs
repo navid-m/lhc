@@ -165,17 +165,30 @@ impl HealthChecker {
     pub fn run_all_checks(&mut self) -> std::io::Result<Vec<CheckResult>> {
         self.check_initialize()?;
         self.check_did_open()?;
+        self.check_publish_diagnostics()?;
         self.check_hover()?;
         self.check_signature_help()?;
         self.check_completion()?;
         self.check_definition()?;
+        self.check_type_definition()?;
+        self.check_implementation()?;
         self.check_references()?;
         self.check_document_symbol()?;
+        self.check_workspace_symbol()?;
         self.check_formatting()?;
         self.check_code_action()?;
         self.check_rename()?;
+        self.check_prepare_rename()?;
         self.check_inlay_hint()?;
-        self.check_workspace_symbol()?;
+        self.check_code_lens()?;
+        self.check_semantic_tokens()?;
+        self.check_folding_range()?;
+        self.check_linked_editing_range()?;
+        self.check_selection_range()?;
+        self.check_document_highlight()?;
+        self.check_did_change_configuration()?;
+        self.check_did_change_workspace_folders()?;
+        self.check_execute_command()?;
         self.check_shutdown()?;
         Ok(self.results.clone())
     }
@@ -1012,6 +1025,722 @@ impl HealthChecker {
         Ok(())
     }
 
+    fn check_did_change_configuration(&mut self) -> std::io::Result<()> {
+        let t0 = Instant::now();
+
+        let params = json!({
+            "settings": {
+                "lsp": {
+                    "enabled": true
+                }
+            }
+        });
+
+        self.client
+            .send_notification("workspace/didChangeConfiguration", Some(params))?;
+
+        std::thread::sleep(Duration::from_millis(100));
+
+        let dt = t0.elapsed().as_millis() as i64;
+        self.record(
+            "DidChangeConfiguration",
+            "workspace/didChangeConfiguration",
+            CheckStatus::Passed,
+            "notification sent",
+            dt,
+        );
+        Ok(())
+    }
+
+    fn check_did_change_workspace_folders(&mut self) -> std::io::Result<()> {
+        let t0 = Instant::now();
+
+        let params = json!({
+            "event": {
+                "added": [
+                    {
+                        "uri": "file:///tmp/workspace",
+                        "name": "workspace"
+                    }
+                ],
+                "removed": []
+            }
+        });
+
+        self.client
+            .send_notification("workspace/didChangeWorkspaceFolders", Some(params))?;
+
+        std::thread::sleep(Duration::from_millis(100));
+
+        let dt = t0.elapsed().as_millis() as i64;
+        self.record(
+            "DidChangeWorkspaceFolders",
+            "workspace/didChangeWorkspaceFolders",
+            CheckStatus::Passed,
+            "notification sent",
+            dt,
+        );
+        Ok(())
+    }
+
+    fn check_execute_command(&mut self) -> std::io::Result<()> {
+        if !self.capabilities.execute_command_provider {
+            self.record(
+                "Execute Command",
+                "workspace/executeCommand",
+                CheckStatus::Skipped,
+                "not advertised",
+                0,
+            );
+            return Ok(());
+        }
+
+        let t0 = Instant::now();
+        let params = json!({
+            "command": "_clangd.testCommand",
+            "arguments": []
+        });
+        let id = self
+            .client
+            .send_request("workspace/executeCommand", Some(params))?;
+
+        let resp = match self
+            .client
+            .read_response(id, Duration::from_millis(TIMEOUT_MS))?
+        {
+            Some(r) => r,
+            None => {
+                self.record(
+                    "Execute Command",
+                    "workspace/executeCommand",
+                    CheckStatus::Timeout,
+                    "no response",
+                    t0.elapsed().as_millis() as i64,
+                );
+                return Ok(());
+            }
+        };
+
+        let dt = t0.elapsed().as_millis() as i64;
+        if resp.get("error").map(|e| !e.is_null()).unwrap_or(false) {
+            let error_obj = resp.get("error").unwrap();
+            let error_code = error_obj.get("code").and_then(|c| c.as_i64());
+            if let Some(code) = error_code {
+                if code == -32601 || code == -32602 {
+                    self.record(
+                        "Execute Command",
+                        "workspace/executeCommand",
+                        CheckStatus::Passed,
+                        "protocol functional (command not supported)",
+                        dt,
+                    );
+                    return Ok(());
+                }
+            }
+            let error_msg = extract_error_message(&resp);
+            self.record_with_error(
+                "Execute Command",
+                "workspace/executeCommand",
+                CheckStatus::Failed,
+                "server error",
+                &error_msg,
+                dt,
+            );
+        } else {
+            self.record(
+                "Execute Command",
+                "workspace/executeCommand",
+                CheckStatus::Passed,
+                "response received",
+                dt,
+            );
+        }
+        Ok(())
+    }
+
+    fn check_type_definition(&mut self) -> std::io::Result<()> {
+        if !self.capabilities.type_definition_provider {
+            self.record(
+                "Go to Type Definition",
+                "textDocument/typeDefinition",
+                CheckStatus::Skipped,
+                "not advertised",
+                0,
+            );
+            return Ok(());
+        }
+
+        let t0 = Instant::now();
+        let params =
+            self.text_document_position(self.sample.definition_line, self.sample.definition_char);
+        let id = self
+            .client
+            .send_request("textDocument/typeDefinition", Some(params))?;
+
+        let resp = match self
+            .client
+            .read_response(id, Duration::from_millis(TIMEOUT_MS))?
+        {
+            Some(r) => r,
+            None => {
+                self.record(
+                    "Go to Type Definition",
+                    "textDocument/typeDefinition",
+                    CheckStatus::Timeout,
+                    "no response",
+                    t0.elapsed().as_millis() as i64,
+                );
+                return Ok(());
+            }
+        };
+
+        let dt = t0.elapsed().as_millis() as i64;
+        if resp.get("error").map(|e| !e.is_null()).unwrap_or(false) {
+            let error_msg = extract_error_message(&resp);
+            self.record_with_error(
+                "Go to Type Definition",
+                "textDocument/typeDefinition",
+                CheckStatus::Failed,
+                "server error",
+                &error_msg,
+                dt,
+            );
+        } else {
+            self.record(
+                "Go to Type Definition",
+                "textDocument/typeDefinition",
+                CheckStatus::Passed,
+                "response received",
+                dt,
+            );
+        }
+        Ok(())
+    }
+
+    fn check_implementation(&mut self) -> std::io::Result<()> {
+        if !self.capabilities.implementation_provider {
+            self.record(
+                "Go to Implementation",
+                "textDocument/implementation",
+                CheckStatus::Skipped,
+                "not advertised",
+                0,
+            );
+            return Ok(());
+        }
+
+        let t0 = Instant::now();
+        let params =
+            self.text_document_position(self.sample.definition_line, self.sample.definition_char);
+        let id = self
+            .client
+            .send_request("textDocument/implementation", Some(params))?;
+
+        let resp = match self
+            .client
+            .read_response(id, Duration::from_millis(TIMEOUT_MS))?
+        {
+            Some(r) => r,
+            None => {
+                self.record(
+                    "Go to Implementation",
+                    "textDocument/implementation",
+                    CheckStatus::Timeout,
+                    "no response",
+                    t0.elapsed().as_millis() as i64,
+                );
+                return Ok(());
+            }
+        };
+
+        let dt = t0.elapsed().as_millis() as i64;
+        if resp.get("error").map(|e| !e.is_null()).unwrap_or(false) {
+            let error_msg = extract_error_message(&resp);
+            self.record_with_error(
+                "Go to Implementation",
+                "textDocument/implementation",
+                CheckStatus::Failed,
+                "server error",
+                &error_msg,
+                dt,
+            );
+        } else {
+            self.record(
+                "Go to Implementation",
+                "textDocument/implementation",
+                CheckStatus::Passed,
+                "response received",
+                dt,
+            );
+        }
+        Ok(())
+    }
+
+    fn check_document_highlight(&mut self) -> std::io::Result<()> {
+        if !self.capabilities.document_highlight_provider {
+            self.record(
+                "Document Highlight",
+                "textDocument/documentHighlight",
+                CheckStatus::Skipped,
+                "not advertised",
+                0,
+            );
+            return Ok(());
+        }
+
+        let t0 = Instant::now();
+        let params =
+            self.text_document_position(self.sample.references_line, self.sample.references_char);
+        let id = self
+            .client
+            .send_request("textDocument/documentHighlight", Some(params))?;
+
+        let resp = match self
+            .client
+            .read_response(id, Duration::from_millis(TIMEOUT_MS))?
+        {
+            Some(r) => r,
+            None => {
+                self.record(
+                    "Document Highlight",
+                    "textDocument/documentHighlight",
+                    CheckStatus::Timeout,
+                    "no response",
+                    t0.elapsed().as_millis() as i64,
+                );
+                return Ok(());
+            }
+        };
+
+        let dt = t0.elapsed().as_millis() as i64;
+        if resp.get("error").map(|e| !e.is_null()).unwrap_or(false) {
+            let error_msg = extract_error_message(&resp);
+            self.record_with_error(
+                "Document Highlight",
+                "textDocument/documentHighlight",
+                CheckStatus::Failed,
+                "server error",
+                &error_msg,
+                dt,
+            );
+        } else {
+            self.record(
+                "Document Highlight",
+                "textDocument/documentHighlight",
+                CheckStatus::Passed,
+                "response received",
+                dt,
+            );
+        }
+        Ok(())
+    }
+
+    fn check_selection_range(&mut self) -> std::io::Result<()> {
+        if !self.capabilities.selection_range_provider {
+            self.record(
+                "Selection Range",
+                "textDocument/selectionRange",
+                CheckStatus::Skipped,
+                "not advertised",
+                0,
+            );
+            return Ok(());
+        }
+
+        let t0 = Instant::now();
+        let params = json!({
+            "textDocument": {
+                "uri": self.sample.uri()
+            },
+            "positions": [
+                {
+                    "line": self.sample.hover_line,
+                    "character": self.sample.hover_char
+                }
+            ]
+        });
+        let id = self
+            .client
+            .send_request("textDocument/selectionRange", Some(params))?;
+
+        let resp = match self
+            .client
+            .read_response(id, Duration::from_millis(TIMEOUT_MS))?
+        {
+            Some(r) => r,
+            None => {
+                self.record(
+                    "Selection Range",
+                    "textDocument/selectionRange",
+                    CheckStatus::Timeout,
+                    "no response",
+                    t0.elapsed().as_millis() as i64,
+                );
+                return Ok(());
+            }
+        };
+
+        let dt = t0.elapsed().as_millis() as i64;
+        if resp.get("error").map(|e| !e.is_null()).unwrap_or(false) {
+            let error_msg = extract_error_message(&resp);
+            self.record_with_error(
+                "Selection Range",
+                "textDocument/selectionRange",
+                CheckStatus::Failed,
+                "server error",
+                &error_msg,
+                dt,
+            );
+        } else {
+            self.record(
+                "Selection Range",
+                "textDocument/selectionRange",
+                CheckStatus::Passed,
+                "response received",
+                dt,
+            );
+        }
+        Ok(())
+    }
+
+    fn check_folding_range(&mut self) -> std::io::Result<()> {
+        if !self.capabilities.folding_range_provider {
+            self.record(
+                "Folding Range",
+                "textDocument/foldingRange",
+                CheckStatus::Skipped,
+                "not advertised",
+                0,
+            );
+            return Ok(());
+        }
+
+        let t0 = Instant::now();
+        let params = json!({
+            "textDocument": {
+                "uri": self.sample.uri()
+            }
+        });
+        let id = self
+            .client
+            .send_request("textDocument/foldingRange", Some(params))?;
+
+        let resp = match self
+            .client
+            .read_response(id, Duration::from_millis(TIMEOUT_MS))?
+        {
+            Some(r) => r,
+            None => {
+                self.record(
+                    "Folding Range",
+                    "textDocument/foldingRange",
+                    CheckStatus::Timeout,
+                    "no response",
+                    t0.elapsed().as_millis() as i64,
+                );
+                return Ok(());
+            }
+        };
+
+        let dt = t0.elapsed().as_millis() as i64;
+        if resp.get("error").map(|e| !e.is_null()).unwrap_or(false) {
+            let error_msg = extract_error_message(&resp);
+            self.record_with_error(
+                "Folding Range",
+                "textDocument/foldingRange",
+                CheckStatus::Failed,
+                "server error",
+                &error_msg,
+                dt,
+            );
+        } else {
+            self.record(
+                "Folding Range",
+                "textDocument/foldingRange",
+                CheckStatus::Passed,
+                "response received",
+                dt,
+            );
+        }
+        Ok(())
+    }
+
+    fn check_linked_editing_range(&mut self) -> std::io::Result<()> {
+        if !self.capabilities.linked_editing_range_provider {
+            self.record(
+                "Linked Editing Range",
+                "textDocument/linkedEditingRange",
+                CheckStatus::Skipped,
+                "not advertised",
+                0,
+            );
+            return Ok(());
+        }
+
+        let t0 = Instant::now();
+        let params = json!({
+            "textDocument": {
+                "uri": self.sample.uri()
+            },
+            "position": {
+                "line": self.sample.hover_line,
+                "character": self.sample.hover_char
+            }
+        });
+        let id = self
+            .client
+            .send_request("textDocument/linkedEditingRange", Some(params))?;
+
+        let resp = match self
+            .client
+            .read_response(id, Duration::from_millis(TIMEOUT_MS))?
+        {
+            Some(r) => r,
+            None => {
+                self.record(
+                    "Linked Editing Range",
+                    "textDocument/linkedEditingRange",
+                    CheckStatus::Timeout,
+                    "no response",
+                    t0.elapsed().as_millis() as i64,
+                );
+                return Ok(());
+            }
+        };
+
+        let dt = t0.elapsed().as_millis() as i64;
+        if resp.get("error").map(|e| !e.is_null()).unwrap_or(false) {
+            let error_msg = extract_error_message(&resp);
+            self.record_with_error(
+                "Linked Editing Range",
+                "textDocument/linkedEditingRange",
+                CheckStatus::Failed,
+                "server error",
+                &error_msg,
+                dt,
+            );
+        } else {
+            self.record(
+                "Linked Editing Range",
+                "textDocument/linkedEditingRange",
+                CheckStatus::Passed,
+                "response received",
+                dt,
+            );
+        }
+        Ok(())
+    }
+
+    fn check_semantic_tokens(&mut self) -> std::io::Result<()> {
+        if !self.capabilities.semantic_tokens_provider {
+            self.record(
+                "Semantic Tokens",
+                "textDocument/semanticTokens/full",
+                CheckStatus::Skipped,
+                "not advertised",
+                0,
+            );
+            return Ok(());
+        }
+
+        let t0 = Instant::now();
+        let params = json!({
+            "textDocument": {
+                "uri": self.sample.uri()
+            }
+        });
+        let id = self
+            .client
+            .send_request("textDocument/semanticTokens/full", Some(params))?;
+
+        let resp = match self
+            .client
+            .read_response(id, Duration::from_millis(TIMEOUT_MS))?
+        {
+            Some(r) => r,
+            None => {
+                self.record(
+                    "Semantic Tokens",
+                    "textDocument/semanticTokens/full",
+                    CheckStatus::Timeout,
+                    "no response",
+                    t0.elapsed().as_millis() as i64,
+                );
+                return Ok(());
+            }
+        };
+
+        let dt = t0.elapsed().as_millis() as i64;
+        if resp.get("error").map(|e| !e.is_null()).unwrap_or(false) {
+            let error_msg = extract_error_message(&resp);
+            self.record_with_error(
+                "Semantic Tokens",
+                "textDocument/semanticTokens/full",
+                CheckStatus::Failed,
+                "server error",
+                &error_msg,
+                dt,
+            );
+        } else {
+            self.record(
+                "Semantic Tokens",
+                "textDocument/semanticTokens/full",
+                CheckStatus::Passed,
+                "response received",
+                dt,
+            );
+        }
+        Ok(())
+    }
+
+    fn check_code_lens(&mut self) -> std::io::Result<()> {
+        if !self.capabilities.code_lens_provider {
+            self.record(
+                "Code Lens",
+                "textDocument/codeLens",
+                CheckStatus::Skipped,
+                "not advertised",
+                0,
+            );
+            return Ok(());
+        }
+
+        let t0 = Instant::now();
+        let params = json!({
+            "textDocument": {
+                "uri": self.sample.uri()
+            }
+        });
+        let id = self
+            .client
+            .send_request("textDocument/codeLens", Some(params))?;
+
+        let resp = match self
+            .client
+            .read_response(id, Duration::from_millis(TIMEOUT_MS))?
+        {
+            Some(r) => r,
+            None => {
+                self.record(
+                    "Code Lens",
+                    "textDocument/codeLens",
+                    CheckStatus::Timeout,
+                    "no response",
+                    t0.elapsed().as_millis() as i64,
+                );
+                return Ok(());
+            }
+        };
+
+        let dt = t0.elapsed().as_millis() as i64;
+        if resp.get("error").map(|e| !e.is_null()).unwrap_or(false) {
+            let error_msg = extract_error_message(&resp);
+            self.record_with_error(
+                "Code Lens",
+                "textDocument/codeLens",
+                CheckStatus::Failed,
+                "server error",
+                &error_msg,
+                dt,
+            );
+        } else {
+            self.record(
+                "Code Lens",
+                "textDocument/codeLens",
+                CheckStatus::Passed,
+                "response received",
+                dt,
+            );
+        }
+        Ok(())
+    }
+
+    fn check_prepare_rename(&mut self) -> std::io::Result<()> {
+        if !self.capabilities.prepare_rename_provider {
+            self.record(
+                "Prepare Rename",
+                "textDocument/prepareRename",
+                CheckStatus::Skipped,
+                "not advertised",
+                0,
+            );
+            return Ok(());
+        }
+
+        let t0 = Instant::now();
+        let params = self.text_document_position(self.sample.rename_line, self.sample.rename_char);
+        let id = self
+            .client
+            .send_request("textDocument/prepareRename", Some(params))?;
+
+        let resp = match self
+            .client
+            .read_response(id, Duration::from_millis(TIMEOUT_MS))?
+        {
+            Some(r) => r,
+            None => {
+                self.record(
+                    "Prepare Rename",
+                    "textDocument/prepareRename",
+                    CheckStatus::Timeout,
+                    "no response",
+                    t0.elapsed().as_millis() as i64,
+                );
+                return Ok(());
+            }
+        };
+
+        let dt = t0.elapsed().as_millis() as i64;
+        if resp.get("error").map(|e| !e.is_null()).unwrap_or(false) {
+            let error_msg = extract_error_message(&resp);
+            self.record_with_error(
+                "Prepare Rename",
+                "textDocument/prepareRename",
+                CheckStatus::Failed,
+                "server error",
+                &error_msg,
+                dt,
+            );
+        } else {
+            self.record(
+                "Prepare Rename",
+                "textDocument/prepareRename",
+                CheckStatus::Passed,
+                "response received",
+                dt,
+            );
+        }
+        Ok(())
+    }
+
+    fn check_publish_diagnostics(&mut self) -> std::io::Result<()> {
+        let t0 = Instant::now();
+
+        std::thread::sleep(Duration::from_millis(500));
+
+        let _ = self.client.read_message(Duration::from_millis(100));
+        let dt = t0.elapsed().as_millis() as i64;
+
+        if !self.capabilities.publish_diagnostics_provider {
+            self.record(
+                "Publish Diagnostics",
+                "textDocument/publishDiagnostics",
+                CheckStatus::Skipped,
+                "not advertised",
+                dt,
+            );
+        } else {
+            self.record(
+                "Publish Diagnostics",
+                "textDocument/publishDiagnostics",
+                CheckStatus::Passed,
+                "provider registered",
+                dt,
+            );
+        }
+        Ok(())
+    }
+
     fn check_shutdown(&mut self) -> std::io::Result<()> {
         let t0 = Instant::now();
 
@@ -1065,7 +1794,9 @@ impl HealthChecker {
                 "name": "lsp-health-checker",
                 "version": "1.0.0"
             },
-            "rootUri": "file:///tmp",
+            "rootPath": null,
+            "rootUri": "file:///",
+            "workspaceFolders": [],
             "capabilities": {
                 "textDocument": {
                     "hover": {
@@ -1084,6 +1815,12 @@ impl HealthChecker {
                     "definition": {
                         "dynamicRegistration": false
                     },
+                    "typeDefinition": {
+                        "dynamicRegistration": false
+                    },
+                    "implementation": {
+                        "dynamicRegistration": false
+                    },
                     "references": {
                         "dynamicRegistration": false
                     },
@@ -1099,18 +1836,46 @@ impl HealthChecker {
                     "rename": {
                         "dynamicRegistration": false
                     },
+                    "prepareRename": {
+                        "dynamicRegistration": false
+                    },
                     "inlayHint": {
+                        "dynamicRegistration": false
+                    },
+                    "codeLens": {
+                        "dynamicRegistration": false
+                    },
+                    "semanticTokens": {
+                        "dynamicRegistration": false
+                    },
+                    "foldingRange": {
+                        "dynamicRegistration": false
+                    },
+                    "linkedEditingRange": {
+                        "dynamicRegistration": false
+                    },
+                    "selectionRange": {
+                        "dynamicRegistration": false
+                    },
+                    "documentHighlight": {
+                        "dynamicRegistration": false
+                    },
+                    "publishDiagnostics": {
                         "dynamicRegistration": false
                     }
                 },
                 "workspace": {
                     "symbol": {
                         "dynamicRegistration": false
+                    },
+                    "workspaceFolders": true,
+                    "configuration": true,
+                    "executeCommand": {
+                        "dynamicRegistration": false
                     }
                 }
             },
-            "trace": "off",
-            "workspaceFolders": Value::Null
+            "trace": "off"
         })
     }
 

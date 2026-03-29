@@ -21,7 +21,7 @@ fn main() {
     }
 
     let server_path = &args[1];
-    let server_args: Vec<String> = Vec::new();
+    let mut server_args: Vec<String> = Vec::new();
     let mut enable_logging = false;
     let mut language: Option<String> = None;
     let mut ref_file: Option<String> = None;
@@ -36,6 +36,8 @@ fn main() {
         } else if let Some(ref_path) = arg.strip_prefix("--ref=") {
             ref_file = Some(ref_path.to_string());
             seen_required = true;
+        } else {
+            server_args.push(arg.clone());
         }
     }
 
