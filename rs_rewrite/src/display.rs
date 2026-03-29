@@ -1,5 +1,5 @@
 use crate::checker::{CheckResult, CheckStatus};
-use comfy_table::presets::{UTF8_FULL, UTF8_HORIZONTAL_ONLY};
+use comfy_table::presets::UTF8_HORIZONTAL_ONLY;
 use comfy_table::{Cell, Color, ContentArrangement, Table};
 
 const ICON_PASS: &str = "✓";

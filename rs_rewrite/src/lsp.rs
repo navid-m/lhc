@@ -22,19 +22,6 @@ pub struct JsonRpcNotification {
     pub params: Option<Value>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
-pub struct JsonRpcResponse {
-    pub id: Option<i64>,
-    pub result: Option<Value>,
-    pub error: Option<ResponseError>,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-pub struct ResponseError {
-    pub code: i64,
-    pub message: String,
-}
-
 #[derive(Debug, Clone, Default)]
 pub struct ServerCapabilities {
     pub hover_provider: bool,
@@ -137,7 +124,11 @@ impl Client {
         Ok(id)
     }
 
-    pub fn send_notification(&mut self, method: &str, params: Option<Value>) -> std::io::Result<()> {
+    pub fn send_notification(
+        &mut self,
+        method: &str,
+        params: Option<Value>,
+    ) -> std::io::Result<()> {
         let notification = JsonRpcNotification {
             jsonrpc: "2.0".to_string(),
             method: method.to_string(),
@@ -178,7 +169,7 @@ impl Client {
             // Read more data
             if let Some(stdout) = self.child.stdout.as_mut() {
                 let mut tmp = [0u8; 4096];
-                
+
                 match stdout.read(&mut tmp) {
                     Ok(0) => return Ok(None),
                     Ok(n) => {
@@ -242,11 +233,7 @@ impl Client {
         Ok(Some(value))
     }
 
-    pub fn read_response(
-        &mut self,
-        id: i64,
-        timeout: Duration,
-    ) -> std::io::Result<Option<Value>> {
+    pub fn read_response(&mut self, id: i64, timeout: Duration) -> std::io::Result<Option<Value>> {
         let deadline = Instant::now() + timeout;
 
         while Instant::now() < deadline {

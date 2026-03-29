@@ -14,6 +14,5 @@ pub fn set_console_output_cp_utf8() -> Result<(), std::io::Error> {
 
 #[cfg(not(windows))]
 pub fn set_console_output_cp_utf8() -> Result<(), std::io::Error> {
-    // No-op on non-Windows platforms
     Ok(())
 }
