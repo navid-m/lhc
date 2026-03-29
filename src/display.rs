@@ -11,8 +11,8 @@ const ICON_TIME: &str = "◌";
 
 pub fn render_header(server_path: &str, language: &str, table_width: usize) {
     let mut starter_box = Table::new();
-    starter_box.load_preset(UTF8_HORIZONTAL_ONLY);
 
+    starter_box.load_preset(UTF8_HORIZONTAL_ONLY);
     starter_box.add_row(vec![Cell::new(format!("Server: {}", server_path))]);
     starter_box.add_row(vec![Cell::new(format!("Language: {}", language))]);
 
