@@ -1,5 +1,5 @@
 use crate::checker::{CheckResult, CheckStatus};
-use comfy_table::modifiers::{UTF8_ROUND_CORNERS, UTF8_SOLID_INNER_BORDERS};
+use comfy_table::modifiers::UTF8_SOLID_INNER_BORDERS;
 use comfy_table::presets::UTF8_HORIZONTAL_ONLY;
 use comfy_table::{Cell, Color, ContentArrangement, Table};
 
