@@ -79,15 +79,13 @@ pub fn render_table(results: &[CheckResult]) {
         Cell::new(skipped),
     ]);
 
-    println!("{}", summary_table);
-    println!();
-
     let mut health_box = Table::new();
     health_box.load_preset(comfy_table::presets::UTF8_BORDERS_ONLY);
     if failed == 0 && timed_out == 0 {
         health_box.add_row(vec![Cell::new("[ok] Server is healthy")]);
     } else {
         health_box.add_row(vec![Cell::new("[!] Server has issues")]);
+        health_box.add_row(vec![Cell::new(summary_table.to_string())]);
     }
 
     println!("{}", health_box);
