@@ -2,8 +2,17 @@ const std = @import("std");
 const lsp = @import("lsp.zig");
 const checker = @import("checker.zig");
 const display = @import("display.zig");
+const builtin = @import("builtin");
 
 pub fn main() !void {
+    if (builtin.os.tag == .windows) {
+        const windows = @import("windows.zig");
+        const success = windows.SetConsoleOutputCP(65001);
+        if (success == 0) {
+            return error.FailedToSetCodePage;
+        }
+    }
+
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
