@@ -20,7 +20,6 @@ fn main() {
         process::exit(1);
     }
 
-    // Check for --list-langs flag
     if args.len() == 2 && args[1] == "--list-langs" {
         print_supported_languages();
         process::exit(0);
