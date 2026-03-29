@@ -145,8 +145,7 @@ For example:
     lhc liger --lang=crystal
     lhc zls --lang=zig
     lhc rust-analyzer --lang=rust --lsp-flags="--stdio"
-    lhc clangd --ref=/path/to/test.cpp --log
-"#,
+    lhc clangd --ref=/path/to/test.cpp --log"#,
     );
 }
 
