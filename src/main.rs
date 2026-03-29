@@ -21,6 +21,11 @@ fn main() {
     }
 
     if args.len() == 2 {
+        if args[1] == "--help" || args[1] == "-h" {
+            print_usage();
+            process::exit(0);
+        }
+
         if args[1] == "--list-langs" {
             print_supported_languages();
             process::exit(0);
@@ -127,7 +132,8 @@ Options:
     --lsp-flags="<f>"   Pass flags to the LSP server
     --list-langs        List all built-in languages
     --version           Display the version of lhc
-    
+    --help              Show this help message
+
 For example:
     lhc clangd --lang=c --log
     lhc liger --lang=crystal
