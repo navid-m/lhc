@@ -66,7 +66,7 @@ fn main() {
         comfy_table::ColumnConstraint::LowerBoundary(comfy_table::Width::Percentage(46)),
     );
 
-    eprintln!("{}", starter_box.to_string());
+    println!("{}", starter_box.to_string());
 
     let mut health_checker =
         match HealthChecker::init(server_path, &server_args, log_file_path, language, ref_file) {
