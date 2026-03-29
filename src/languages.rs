@@ -156,27 +156,29 @@ int main() {
         "zig" => Some(LanguageSample {
             language_id: "zig".to_string(),
             file_extension: ".zig".to_string(),
-            content: r#"fn add(a: i32, b: i32) i32 {
+            content: r#"const std = @import("std");
+
+fn add(a: i32, b: i32) i32 {
     return a + b;
 }
 
-pub fn main() void {
+pub fn main() !void {
     const x = add(1, 2);
     _ = x;
 }
 "#
             .to_string(),
-            hover_line: 0,
+            hover_line: 2,
             hover_char: 7,
-            signature_line: 5,
+            signature_line: 7,
             signature_char: 19,
-            completion_line: 5,
+            completion_line: 7,
             completion_char: 14,
-            definition_line: 5,
+            definition_line: 7,
             definition_char: 18,
-            references_line: 0,
+            references_line: 2,
             references_char: 7,
-            rename_line: 0,
+            rename_line: 2,
             rename_char: 7,
         }),
         "csharp" | "cs" => Some(LanguageSample {

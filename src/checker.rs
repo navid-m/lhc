@@ -238,13 +238,16 @@ impl HealthChecker {
 
         let params = self.build_initialize_params();
         let id = self.client.send_request("initialize", Some(params))?;
-
         let resp = match self
             .client
             .read_response(id, Duration::from_millis(TIMEOUT_MS))?
         {
-            Some(r) => r,
+            Some(r) => {
+                eprintln!("[DEBUG] Received initialize response");
+                r
+            }
             None => {
+                eprintln!("[DEBUG] Initialize timeout - no response");
                 self.record(
                     "Initialize",
                     "initialize",
@@ -1790,92 +1793,11 @@ impl HealthChecker {
     fn build_initialize_params(&self) -> Value {
         json!({
             "processId": std::process::id() as i64,
-            "clientInfo": {
-                "name": "lsp-health-checker",
-                "version": "1.0.0"
-            },
-            "rootPath": null,
-            "rootUri": "file:///",
-            "workspaceFolders": [],
+            "rootUri": null,
             "capabilities": {
-                "textDocument": {
-                    "hover": {
-                        "contentFormat": ["markdown", "plaintext"]
-                    },
-                    "signatureHelp": {
-                        "signatureInformation": {
-                            "documentationFormat": ["markdown"]
-                        }
-                    },
-                    "completion": {
-                        "completionItem": {
-                            "snippetSupport": true
-                        }
-                    },
-                    "definition": {
-                        "dynamicRegistration": false
-                    },
-                    "typeDefinition": {
-                        "dynamicRegistration": false
-                    },
-                    "implementation": {
-                        "dynamicRegistration": false
-                    },
-                    "references": {
-                        "dynamicRegistration": false
-                    },
-                    "documentSymbol": {
-                        "hierarchicalDocumentSymbolSupport": true
-                    },
-                    "formatting": {
-                        "dynamicRegistration": false
-                    },
-                    "codeAction": {
-                        "dynamicRegistration": false
-                    },
-                    "rename": {
-                        "dynamicRegistration": false
-                    },
-                    "prepareRename": {
-                        "dynamicRegistration": false
-                    },
-                    "inlayHint": {
-                        "dynamicRegistration": false
-                    },
-                    "codeLens": {
-                        "dynamicRegistration": false
-                    },
-                    "semanticTokens": {
-                        "dynamicRegistration": false
-                    },
-                    "foldingRange": {
-                        "dynamicRegistration": false
-                    },
-                    "linkedEditingRange": {
-                        "dynamicRegistration": false
-                    },
-                    "selectionRange": {
-                        "dynamicRegistration": false
-                    },
-                    "documentHighlight": {
-                        "dynamicRegistration": false
-                    },
-                    "publishDiagnostics": {
-                        "dynamicRegistration": false
-                    }
-                },
-                "workspace": {
-                    "symbol": {
-                        "dynamicRegistration": false
-                    },
-                    "workspaceFolders": true,
-                    "configuration": true,
-                    "executeCommand": {
-                        "dynamicRegistration": false
-                    }
-                }
-            },
-            "trace": "off"
+                "textDocument": {},
+                "workspace": {}
+            }
         })
     }
 
