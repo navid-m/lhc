@@ -20,9 +20,19 @@ fn main() {
         process::exit(1);
     }
 
-    if args.len() == 2 && args[1] == "--list-langs" {
-        print_supported_languages();
-        process::exit(0);
+    if args.len() == 2 {
+        if args[1] == "--list-langs" {
+            print_supported_languages();
+            process::exit(0);
+        }
+
+        if args[1] == "--version" || args[1] == "-v" {
+            println!(
+                "v{}\nBy Navid M (C) - GPL-3.0-only",
+                env!("CARGO_PKG_VERSION")
+            );
+            process::exit(0);
+        }
     }
 
     let server_path = &args[1];
@@ -36,9 +46,6 @@ fn main() {
     for arg in args[2..].iter() {
         if arg == "--log" {
             enable_logging = true;
-        } else if arg == "--list-langs" {
-            print_supported_languages();
-            process::exit(0);
         } else if let Some(lang) = arg.strip_prefix("--lang=") {
             language = Some(lang.to_string());
             seen_required = true;
@@ -119,7 +126,8 @@ Options:
     --log               Write errors to lhc-<timestamp>.log file
     --lsp-flags="<f>"   Pass flags to the LSP server
     --list-langs        List all built-in languages
-
+    --version           Display the version of lhc
+    
 For example:
     lhc clangd --lang=c --log
     lhc liger --lang=crystal
@@ -145,5 +153,5 @@ fn print_supported_languages() {
         println!();
     }
 
-    println!("\nUse --lang=<language> to test with a specific language.");
+    println!("\nUse --lang=<language> to test with a specific builtin language.");
 }
