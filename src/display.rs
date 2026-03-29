@@ -1,7 +1,9 @@
 use crate::checker::{CheckResult, CheckStatus};
+use comfy_table::modifiers::{UTF8_ROUND_CORNERS, UTF8_SOLID_INNER_BORDERS};
 use comfy_table::presets::UTF8_HORIZONTAL_ONLY;
 use comfy_table::{Cell, Color, ContentArrangement, Table};
 
+const SUMMARY_TABLE_OFFSET: usize = 32;
 const ICON_PASS: &str = "✓";
 const ICON_FAIL: &str = "✗";
 const ICON_SKIP: &str = "○";
@@ -98,7 +100,7 @@ pub fn render_table(results: &[CheckResult], server_path: String, language: Stri
         Cell::new("Skipped"),
     ]);
 
-    summary_table.load_preset(UTF8_HORIZONTAL_ONLY);
+    summary_table.load_preset(UTF8_SOLID_INNER_BORDERS);
     summary_table.add_row(vec![
         Cell::new(passed),
         Cell::new(timed_out),
@@ -107,7 +109,14 @@ pub fn render_table(results: &[CheckResult], server_path: String, language: Stri
     ]);
 
     summary_table.column_mut(3).unwrap().set_constraint(
-        comfy_table::ColumnConstraint::LowerBoundary(comfy_table::Width::Percentage(30)),
+        comfy_table::ColumnConstraint::Boundaries {
+            lower: comfy_table::Width::Fixed(
+                (table_width.saturating_sub(SUMMARY_TABLE_OFFSET)) as u16,
+            ),
+            upper: comfy_table::Width::Fixed(
+                (table_width.saturating_sub(SUMMARY_TABLE_OFFSET)) as u16,
+            ),
+        },
     );
 
     let mut health_box = Table::new();
@@ -118,7 +127,7 @@ pub fn render_table(results: &[CheckResult], server_path: String, language: Stri
         health_box.add_row(vec![Cell::new("Server is healthy")]);
     } else {
         health_box.add_row(vec![Cell::new(format!(
-            "Server {} has issues with language {}.",
+            "Server {} has issues with the {} language.",
             server_path, language
         ))]);
         health_box.add_row(vec![Cell::new(summary_table.to_string())]);
