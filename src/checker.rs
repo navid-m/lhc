@@ -243,11 +243,9 @@ impl HealthChecker {
             .read_response(id, Duration::from_millis(TIMEOUT_MS))?
         {
             Some(r) => {
-                eprintln!("[DEBUG] Received initialize response");
                 r
             }
             None => {
-                eprintln!("[DEBUG] Initialize timeout - no response");
                 self.record(
                     "Initialize",
                     "initialize",

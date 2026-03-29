@@ -129,10 +129,6 @@ pub struct Client {
 
 impl Client {
     pub fn init(server_path: &str, server_args: &[String]) -> std::io::Result<Self> {
-        eprintln!(
-            "[DEBUG] Spawning LSP server: {} with args: {:?}",
-            server_path, server_args
-        );
         let mut cmd = Command::new(server_path);
         cmd.args(server_args)
             .stdin(Stdio::piped())
@@ -140,7 +136,6 @@ impl Client {
             .stderr(Stdio::piped());
 
         let child = cmd.spawn()?;
-        eprintln!("[DEBUG] LSP server spawned successfully");
 
         Ok(Client {
             child,
@@ -181,29 +176,22 @@ impl Client {
         Ok(())
     }
 
-    fn send_raw(&mut self, content: &str) -> std::io::Result<()> {
-        eprintln!("[DEBUG] Sending message: {}", content);
-        eprintln!("[DEBUG] Message length: {} bytes", content.len());
-        
+    fn send_raw(&mut self, content: &str) -> std::io::Result<()> {        
         let stdin = self.child.stdin.as_mut().ok_or(std::io::Error::new(
             std::io::ErrorKind::BrokenPipe,
             "No stdin",
         ))?;
 
         let header = format!("Content-Length: {}\r\n\r\n", content.len());
-        eprintln!("[DEBUG] Writing header: {}", header.trim());
-        eprintln!("[DEBUG] Header bytes: {:?}", header.as_bytes());
         
         stdin.write_all(header.as_bytes())?;
         stdin.write_all(content.as_bytes())?;
         stdin.flush()?;
-        eprintln!("[DEBUG] Message sent and flushed");
         Ok(())
     }
 
     pub fn read_message(&mut self, timeout: Duration) -> std::io::Result<Option<Value>> {
         let deadline = Instant::now() + timeout;
-        eprintln!("[DEBUG] read_message called with timeout: {:?}", timeout);
 
         while Instant::now() < deadline {
             if let Some(msg) = self.try_parse_message()? {
@@ -212,37 +200,28 @@ impl Client {
 
             let remaining = deadline.saturating_duration_since(Instant::now());
             if remaining.is_zero() {
-                eprintln!("[DEBUG] Timeout reached in read_message");
                 return Ok(None);
             }
 
-            // Check if process is still alive before reading
             let process_exited = match self.child.try_wait() {
-                Ok(Some(status)) => {
-                    eprintln!("[DEBUG] Process exited with status: {}", status);
+                Ok(Some(_)) => {
                     true
                 }
                 Ok(None) => false,
-                Err(e) => {
-                    eprintln!("[DEBUG] Error checking process status: {}", e);
+                Err(_) => {
                     false
                 }
             };
 
-            // Read more data
             if let Some(stdout) = self.child.stdout.as_mut() {
                 let mut tmp = [0u8; 4096];
 
                 match stdout.read(&mut tmp) {
                     Ok(0) => {
-                        eprintln!("[DEBUG] Read 0 bytes - pipe closed");
                         return Ok(None);
                     }
                     Ok(n) => {
-                        eprintln!("[DEBUG] Read {} bytes from stdout", n);
                         self.read_buf.extend_from_slice(&tmp[0..n]);
-                        
-                        // If process exited but we got data, continue parsing
                         if process_exited {
                             continue;
                         }
@@ -253,17 +232,14 @@ impl Client {
                     Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
                         std::thread::sleep(Duration::from_millis(10));
                     }
-                    Err(e) => {
-                        eprintln!("[DEBUG] Read error: {}", e);
+                    Err(_) => {
                         if process_exited {
-                            // Process exited and we can't read more, return what we have
                             return Ok(None);
                         }
                         return Ok(None);
                     }
                 }
             } else {
-                eprintln!("[DEBUG] No stdout available");
                 return Ok(None);
             }
         }
@@ -273,15 +249,11 @@ impl Client {
 
     fn try_parse_message(&mut self) -> std::io::Result<Option<Value>> {
         let data = &self.read_buf[..];
-        eprintln!("[DEBUG] Buffer size: {} bytes", data.len());
-
         let sep = match memmem::find(data, b"\r\n\r\n") {
             Some(pos) => {
-                eprintln!("[DEBUG] Found header separator at position {}", pos);
                 pos
             }
             None => {
-                eprintln!("[DEBUG] No header separator found yet");
                 return Ok(None);
             }
         };
@@ -302,28 +274,18 @@ impl Client {
             .parse()
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
 
-        eprintln!("[DEBUG] Content-Length: {}", content_length);
 
         let body_start = sep + 4;
         if data.len() < body_start + content_length {
-            eprintln!(
-                "[DEBUG] Incomplete message: have {} bytes, need {}",
-                data.len(),
-                body_start + content_length
-            );
             return Ok(None);
         }
 
         let body = &data[body_start..body_start + content_length];
-        eprintln!("[DEBUG] Parsing JSON body...");
         let value: Value = serde_json::from_slice(body).map_err(|e| {
-            eprintln!("[DEBUG] JSON parse error: {}", e);
-            eprintln!("[DEBUG] Body was: {}", String::from_utf8_lossy(body));
             std::io::Error::new(std::io::ErrorKind::InvalidData, e)
         })?;
 
         self.read_buf.drain(..body_start + content_length);
-        eprintln!("[DEBUG] Successfully parsed message");
 
         Ok(Some(value))
     }
@@ -335,41 +297,31 @@ impl Client {
             let remaining = deadline.saturating_duration_since(Instant::now());
             let msg = match self.read_message(remaining)? {
                 Some(m) => {
-                    eprintln!(
-                        "[DEBUG] read_response received message: {}",
-                        serde_json::to_string(&m).unwrap_or_else(|_| "invalid json".to_string())
-                    );
                     m
                 }
                 None => {
-                    eprintln!("[DEBUG] read_response got None");
                     return Ok(None);
                 }
             };
 
             let Some(obj) = msg.as_object() else {
-                eprintln!("[DEBUG] Message is not an object");
                 continue;
             };
 
             let Some(msg_id) = obj.get("id") else {
-                eprintln!("[DEBUG] Message has no id field (likely a notification)");
                 continue;
             };
 
             let Some(msg_id_int) = msg_id.as_i64() else {
-                eprintln!("[DEBUG] Message id is not an integer");
                 continue;
             };
 
-            eprintln!("[DEBUG] Message id: {}, looking for: {}", msg_id_int, id);
             if msg_id_int == id {
-                eprintln!("[DEBUG] Found matching response!");
                 return Ok(Some(msg));
             }
         }
 
-        eprintln!("[DEBUG] Timeout waiting for response id: {}", id);
+        eprintln!("Timeout waiting for response id: {}", id);
         Ok(None)
     }
 
