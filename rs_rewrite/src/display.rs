@@ -1,0 +1,86 @@
+use crate::checker::{CheckResult, CheckStatus};
+use comfy_table::presets::UTF8_FULL;
+use comfy_table::{Cell, Color, ContentArrangement, Table};
+
+const ICON_PASS: &str = "✓";
+const ICON_FAIL: &str = "✗";
+const ICON_SKIP: &str = "○";
+const ICON_TIME: &str = "◌";
+
+pub fn render_table(results: &[CheckResult]) {
+    let mut passed: usize = 0;
+    let mut failed: usize = 0;
+    let mut skipped: usize = 0;
+    let mut timed_out: usize = 0;
+
+    for r in results {
+        match r.status {
+            CheckStatus::Passed => passed += 1,
+            CheckStatus::Failed => failed += 1,
+            CheckStatus::Skipped => skipped += 1,
+            CheckStatus::Timeout => timed_out += 1,
+        }
+    }
+
+    let mut table = Table::new();
+    table
+        .load_preset(UTF8_FULL)
+        .set_content_arrangement(ContentArrangement::Dynamic)
+        .set_header(vec![
+            Cell::new("Status").fg(Color::Cyan),
+            Cell::new("Check").fg(Color::Cyan),
+            Cell::new("LSP Method").fg(Color::Cyan),
+            Cell::new("Detail").fg(Color::Cyan),
+            Cell::new("Latency").fg(Color::Cyan),
+        ]);
+
+    for r in results {
+        let (icon, color) = match r.status {
+            CheckStatus::Passed => (ICON_PASS, Color::Green),
+            CheckStatus::Failed => (ICON_FAIL, Color::Red),
+            CheckStatus::Skipped => (ICON_SKIP, Color::Yellow),
+            CheckStatus::Timeout => (ICON_TIME, Color::Magenta),
+        };
+
+        let status_str = format!("{} {}", icon, r.status.as_str());
+
+        let latency_display = if r.status == CheckStatus::Skipped || r.duration_ms == 0 {
+            "—".to_string()
+        } else {
+            format!("{} ms", r.duration_ms)
+        };
+
+        table.add_row(vec![
+            Cell::new(status_str).fg(color),
+            Cell::new(r.name),
+            Cell::new(r.method),
+            Cell::new(r.detail.as_str()),
+            Cell::new(latency_display).fg(color),
+        ]);
+    }
+
+    println!();
+    println!("{}", table);
+    println!();
+
+    print!("  Summary:  ");
+    print!("{} passed{}", ICON_PASS, passed,);
+    if failed > 0 {
+        print!("  {} {} failed", ICON_FAIL, failed,);
+    }
+    if timed_out > 0 {
+        print!("  {} {} timed out", ICON_TIME, timed_out,);
+    }
+    if skipped > 0 {
+        print!("  {} {} skipped", ICON_SKIP, skipped,);
+    }
+    println!();
+    println!();
+
+    if failed == 0 && timed_out == 0 {
+        println!("Server is healthy");
+    } else {
+        println!("Server has issues");
+    }
+    println!();
+}
