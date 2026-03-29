@@ -1,5 +1,7 @@
 use crate::lsp::{Client, ServerCapabilities};
 use serde_json::{Value, json};
+use std::fs::File;
+use std::io::{BufWriter, Write};
 use std::time::{Duration, Instant};
 
 pub const TIMEOUT_MS: u64 = 5000;
@@ -14,6 +16,24 @@ fn main() {
     let _ = x;
 }
 "#;
+
+fn extract_error_message(resp: &Value) -> String {
+    if let Some(error) = resp.get("error") {
+        if let Some(obj) = error.as_object() {
+            if let Some(message) = obj.get("message").and_then(|m| m.as_str()) {
+                return message.to_string();
+            }
+            if let Some(data) = obj.get("data") {
+                if let Some(data_str) = data.as_str() {
+                    return data_str.to_string();
+                }
+                return data.to_string();
+            }
+            return error.to_string();
+        }
+    }
+    "unknown error".to_string()
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CheckStatus {
@@ -47,19 +67,44 @@ pub struct HealthChecker {
     client: Client,
     capabilities: ServerCapabilities,
     results: Vec<CheckResult>,
+    log_writer: Option<BufWriter<File>>,
+    server_name: String,
 }
 
 impl HealthChecker {
-    pub fn init(server_path: &str, server_args: &[String]) -> std::io::Result<Self> {
+    pub fn init(
+        server_path: &str,
+        server_args: &[String],
+        log_file_path: Option<String>,
+    ) -> std::io::Result<Self> {
         let client = Client::init(server_path, server_args)?;
+
+        let log_writer = if let Some(path) = log_file_path {
+            let file = File::create(&path)?;
+            Some(BufWriter::new(file))
+        } else {
+            None
+        };
+
+        let server_name = std::path::Path::new(server_path)
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or(server_path)
+            .to_string();
+
         Ok(HealthChecker {
             client,
             capabilities: ServerCapabilities::default(),
             results: Vec::new(),
+            log_writer,
+            server_name,
         })
     }
 
     pub fn deinit(&mut self) {
+        if let Some(ref mut writer) = self.log_writer {
+            let _ = writer.flush();
+        }
         self.client.deinit();
     }
 
@@ -98,6 +143,32 @@ impl HealthChecker {
         });
     }
 
+    fn record_with_error(
+        &mut self,
+        name: &'static str,
+        method: &'static str,
+        status: CheckStatus,
+        display_detail: &str,
+        actual_error: &str,
+        duration_ms: i64,
+    ) {
+        if let Some(ref mut writer) = self.log_writer {
+            let line = format!(
+                "{}:{} -> {}\n",
+                self.server_name, name, actual_error
+            );
+            let _ = writer.write_all(line.as_bytes());
+        }
+
+        self.results.push(CheckResult {
+            name,
+            method,
+            status,
+            detail: display_detail.to_string(),
+            duration_ms,
+        });
+    }
+
     fn check_initialize(&mut self) -> std::io::Result<()> {
         let t0 = Instant::now();
 
@@ -125,11 +196,13 @@ impl HealthChecker {
 
         if let Some(error) = resp.get("error") {
             if !error.is_null() {
-                self.record(
+                let error_msg = extract_error_message(&resp);
+                self.record_with_error(
                     "Initialize",
                     "initialize",
                     CheckStatus::Failed,
                     "server returned error",
+                    &error_msg,
                     dt,
                 );
                 return Ok(());
@@ -219,11 +292,13 @@ impl HealthChecker {
 
         let dt = t0.elapsed().as_millis() as i64;
         if resp.get("error").map(|e| !e.is_null()).unwrap_or(false) {
-            self.record(
+            let error_msg = extract_error_message(&resp);
+            self.record_with_error(
                 "Hover",
                 "textDocument/hover",
                 CheckStatus::Failed,
                 "server error",
+                &error_msg,
                 dt,
             );
         } else {
@@ -275,11 +350,13 @@ impl HealthChecker {
 
         let dt = t0.elapsed().as_millis() as i64;
         if resp.get("error").map(|e| !e.is_null()).unwrap_or(false) {
-            self.record(
+            let error_msg = extract_error_message(&resp);
+            self.record_with_error(
                 "Signature Help",
                 "textDocument/signatureHelp",
                 CheckStatus::Failed,
                 "server error",
+                &error_msg,
                 dt,
             );
         } else {
@@ -331,11 +408,13 @@ impl HealthChecker {
 
         let dt = t0.elapsed().as_millis() as i64;
         if resp.get("error").map(|e| !e.is_null()).unwrap_or(false) {
-            self.record(
+            let error_msg = extract_error_message(&resp);
+            self.record_with_error(
                 "Completion",
                 "textDocument/completion",
                 CheckStatus::Failed,
                 "server error",
+                &error_msg,
                 dt,
             );
         } else {
@@ -387,11 +466,13 @@ impl HealthChecker {
 
         let dt = t0.elapsed().as_millis() as i64;
         if resp.get("error").map(|e| !e.is_null()).unwrap_or(false) {
-            self.record(
+            let error_msg = extract_error_message(&resp);
+            self.record_with_error(
                 "Go to Definition",
                 "textDocument/definition",
                 CheckStatus::Failed,
                 "server error",
+                &error_msg,
                 dt,
             );
         } else {
@@ -456,11 +537,13 @@ impl HealthChecker {
 
         let dt = t0.elapsed().as_millis() as i64;
         if resp.get("error").map(|e| !e.is_null()).unwrap_or(false) {
-            self.record(
+            let error_msg = extract_error_message(&resp);
+            self.record_with_error(
                 "Find References",
                 "textDocument/references",
                 CheckStatus::Failed,
                 "server error",
+                &error_msg,
                 dt,
             );
         } else {
@@ -516,11 +599,13 @@ impl HealthChecker {
 
         let dt = t0.elapsed().as_millis() as i64;
         if resp.get("error").map(|e| !e.is_null()).unwrap_or(false) {
-            self.record(
+            let error_msg = extract_error_message(&resp);
+            self.record_with_error(
                 "Document Symbols",
                 "textDocument/documentSymbol",
                 CheckStatus::Failed,
                 "server error",
+                &error_msg,
                 dt,
             );
         } else {
@@ -580,11 +665,13 @@ impl HealthChecker {
 
         let dt = t0.elapsed().as_millis() as i64;
         if resp.get("error").map(|e| !e.is_null()).unwrap_or(false) {
-            self.record(
+            let error_msg = extract_error_message(&resp);
+            self.record_with_error(
                 "Formatting",
                 "textDocument/formatting",
                 CheckStatus::Failed,
                 "server error",
+                &error_msg,
                 dt,
             );
         } else {
@@ -653,11 +740,13 @@ impl HealthChecker {
 
         let dt = t0.elapsed().as_millis() as i64;
         if resp.get("error").map(|e| !e.is_null()).unwrap_or(false) {
-            self.record(
+            let error_msg = extract_error_message(&resp);
+            self.record_with_error(
                 "Code Actions",
                 "textDocument/codeAction",
                 CheckStatus::Failed,
                 "server error",
+                &error_msg,
                 dt,
             );
         } else {
@@ -718,11 +807,13 @@ impl HealthChecker {
 
         let dt = t0.elapsed().as_millis() as i64;
         if resp.get("error").map(|e| !e.is_null()).unwrap_or(false) {
-            self.record(
+            let error_msg = extract_error_message(&resp);
+            self.record_with_error(
                 "Rename Symbol",
                 "textDocument/rename",
                 CheckStatus::Failed,
                 "server error",
+                &error_msg,
                 dt,
             );
         } else {
@@ -788,11 +879,13 @@ impl HealthChecker {
 
         let dt = t0.elapsed().as_millis() as i64;
         if resp.get("error").map(|e| !e.is_null()).unwrap_or(false) {
-            self.record(
+            let error_msg = extract_error_message(&resp);
+            self.record_with_error(
                 "Inlay Hints",
                 "textDocument/inlayHint",
                 CheckStatus::Failed,
                 "server error",
+                &error_msg,
                 dt,
             );
         } else {
@@ -844,11 +937,13 @@ impl HealthChecker {
 
         let dt = t0.elapsed().as_millis() as i64;
         if resp.get("error").map(|e| !e.is_null()).unwrap_or(false) {
-            self.record(
+            let error_msg = extract_error_message(&resp);
+            self.record_with_error(
                 "Workspace Symbols",
                 "workspace/symbol",
                 CheckStatus::Failed,
                 "server error",
+                &error_msg,
                 dt,
             );
         } else {
@@ -888,11 +983,13 @@ impl HealthChecker {
 
         let dt = t0.elapsed().as_millis() as i64;
         if resp.get("error").map(|e| !e.is_null()).unwrap_or(false) {
-            self.record(
+            let error_msg = extract_error_message(&resp);
+            self.record_with_error(
                 "Shutdown",
                 "shutdown/exit",
                 CheckStatus::Failed,
                 "server error",
+                &error_msg,
                 dt,
             );
         } else {

@@ -20,7 +20,23 @@ fn main() {
     }
 
     let server_path = &args[1];
-    let server_args: Vec<String> = args[2..].to_vec();
+    let mut server_args: Vec<String> = Vec::new();
+    let mut enable_logging = false;
+
+    for arg in args[2..].iter() {
+        if arg == "--log" {
+            enable_logging = true;
+        } else {
+            server_args.push(arg.clone());
+        }
+    }
+
+    let log_file_path = if enable_logging {
+        let timestamp = chrono::Local::now().format("%Y%m%d-%H%M%S").to_string();
+        Some(format!("lhc-{}.log", timestamp))
+    } else {
+        None
+    };
     let mut starter_box = comfy_table::Table::new();
     starter_box.load_preset(comfy_table::presets::UTF8_HORIZONTAL_ONLY);
     starter_box.add_row(vec![comfy_table::Cell::new(format!(
@@ -32,7 +48,7 @@ fn main() {
     );
     eprintln!("{}", starter_box.to_string());
 
-    let mut health_checker = match HealthChecker::init(server_path, &server_args) {
+    let mut health_checker = match HealthChecker::init(server_path, &server_args, log_file_path) {
         Ok(checker) => checker,
         Err(e) => {
             eprintln!("Failed to initialize health checker: {}", e);
@@ -58,14 +74,14 @@ fn print_usage() {
         r#"
   lhc - LSP Health Checker
 
-  Usage: lhc <lsp-server-path> [server-args...]
+  Usage: lhc <lsp-server-path> [server-args...] [--log]
 
   Examples:
     lhc rust-analyzer
-    lhc clangd --log=error
+    lhc clangd --log
     lhc liger
     lhc zls
-    lhc pyright-langserver --stdio
+    lhc pyright-langserver --stdio --log
 
   Checks performed:
     · initialize / initialized handshake
