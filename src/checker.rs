@@ -1,5 +1,6 @@
 use crate::languages::LanguageSample;
 use crate::lsp::{Client, ServerCapabilities};
+use indicatif::{ProgressBar, ProgressStyle};
 use serde_json::{json, Value};
 use std::fs::File;
 use std::io::{BufWriter, Read, Write};
@@ -60,6 +61,7 @@ pub struct HealthChecker {
     log_writer: Option<BufWriter<File>>,
     server_name: String,
     sample: LanguageSample,
+    progress_bar: Option<ProgressBar>,
 }
 
 impl HealthChecker {
@@ -153,9 +155,13 @@ impl HealthChecker {
             log_writer,
             server_name,
             sample,
+            progress_bar: None,
         })
     }
     pub fn deinit(&mut self) {
+        if let Some(pb) = &self.progress_bar {
+            pb.finish_and_clear();
+        }
         if let Some(ref mut writer) = self.log_writer {
             let _ = writer.flush();
         }
@@ -163,6 +169,17 @@ impl HealthChecker {
     }
 
     pub fn run_all_checks(&mut self) -> std::io::Result<Vec<CheckResult>> {
+        let total_checks = 26;
+        
+        let pb = ProgressBar::new(total_checks);
+        pb.set_style(
+            ProgressStyle::default_bar()
+                .template("{spinner:.green} [{bar:40.cyan/blue}] {pos}/{len} {msg}")
+                .unwrap()
+                .progress_chars("█▓▒░ ")
+        );
+        
+        self.progress_bar = Some(pb);
         self.check_initialize()?;
         self.check_did_open()?;
         self.check_publish_diagnostics()?;
@@ -190,6 +207,11 @@ impl HealthChecker {
         self.check_did_change_workspace_folders()?;
         self.check_execute_command()?;
         self.check_shutdown()?;
+        
+        if let Some(pb) = &self.progress_bar {
+            pb.finish_and_clear();
+        }
+        
         Ok(self.results.clone())
     }
 
@@ -201,6 +223,11 @@ impl HealthChecker {
         detail: &str,
         duration_ms: i64,
     ) {
+        if let Some(pb) = &self.progress_bar {
+            pb.inc(1);
+            pb.set_message(format!("{}", name));
+        }
+        
         self.results.push(CheckResult {
             name,
             method,
@@ -219,6 +246,11 @@ impl HealthChecker {
         actual_error: &str,
         duration_ms: i64,
     ) {
+        if let Some(pb) = &self.progress_bar {
+            pb.inc(1);
+            pb.set_message(format!("{}", name));
+        }
+        
         if let Some(ref mut writer) = self.log_writer {
             let line = format!("{}:{} -> {}\n", self.server_name, name, actual_error);
             let _ = writer.write_all(line.as_bytes());
