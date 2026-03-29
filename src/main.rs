@@ -129,7 +129,7 @@ fn main() {
 
 fn print_usage() {
     eprintln!(
-        r#"lhc - LSP Health Checker
+        r#"lhc - LSP Server Health Checker
 
 Usage: lhc <lsp-server> [--log] [--lang=<lang>] [--ref=<file>] [--lsp-flags="<flags>"] [--list-langs]
 
