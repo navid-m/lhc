@@ -118,7 +118,7 @@ pub fn render_table(results: &[CheckResult], server_path: String, language: Stri
         health_box.add_row(vec![Cell::new("Server is healthy")]);
     } else {
         health_box.add_row(vec![Cell::new(format!(
-            "Server {} has issues with language {}.\n",
+            "Server {} has issues with language {}.",
             server_path, language
         ))]);
         health_box.add_row(vec![Cell::new(summary_table.to_string())]);
