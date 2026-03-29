@@ -1066,12 +1066,144 @@ sub main() {
             rename_line: 0,
             rename_char: 4,
         }),
+        "oberon" => Some(LanguageSample {
+            language_id: "oberon".to_string(),
+            file_extension: ".mod".to_string(),
+            content: r#"MODULE Main;
+
+PROCEDURE Add(a, b: INTEGER): INTEGER;
+BEGIN
+    RETURN a + b
+END Add;
+
+PROCEDURE Main;
+VAR x: INTEGER;
+BEGIN
+    x := Add(1, 2)
+END Main;
+
+END Main.
+"#
+            .to_string(),
+            hover_line: 2,
+            hover_char: 10,
+            signature_line: 10,
+            signature_char: 11,
+            completion_line: 10,
+            completion_char: 9,
+            definition_line: 10,
+            definition_char: 10,
+            references_line: 2,
+            references_char: 10,
+            rename_line: 2,
+            rename_char: 10,
+        }),
+        "vala" => Some(LanguageSample {
+            language_id: "vala".to_string(),
+            file_extension: ".vala".to_string(),
+            content: r#"int add(int a, int b) {
+    return a + b;
+}
+
+int main() {
+    int x = add(1, 2);
+    return 0;
+}
+"#
+            .to_string(),
+            hover_line: 0,
+            hover_char: 4,
+            signature_line: 5,
+            signature_char: 16,
+            completion_line: 5,
+            completion_char: 12,
+            definition_line: 5,
+            definition_char: 15,
+            references_line: 0,
+            references_char: 4,
+            rename_line: 0,
+            rename_char: 4,
+        }),
+        "ocaml" | "ml" => Some(LanguageSample {
+            language_id: "ocaml".to_string(),
+            file_extension: ".ml".to_string(),
+            content: r#"let add a b =
+  a + b
+
+let main () =
+  let x = add 1 2 in
+  x
+"#
+            .to_string(),
+            hover_line: 0,
+            hover_char: 4,
+            signature_line: 4,
+            signature_char: 12,
+            completion_line: 4,
+            completion_char: 10,
+            definition_line: 4,
+            definition_char: 11,
+            references_line: 0,
+            references_char: 4,
+            rename_line: 0,
+            rename_char: 4,
+        }),
+        "fsharp" | "fs" => Some(LanguageSample {
+            language_id: "fsharp".to_string(),
+            file_extension: ".fs".to_string(),
+            content: r#"let add (a: int) (b: int) : int =
+    a + b
+
+let main () =
+    let x = add 1 2
+    x
+"#
+            .to_string(),
+            hover_line: 0,
+            hover_char: 4,
+            signature_line: 4,
+            signature_char: 14,
+            completion_line: 4,
+            completion_char: 12,
+            definition_line: 4,
+            definition_char: 13,
+            references_line: 0,
+            references_char: 4,
+            rename_line: 0,
+            rename_char: 4,
+        }),
+        "axe" => Some(LanguageSample {
+            language_id: "axe".to_string(),
+            file_extension: ".axe".to_string(),
+            content: r#"def add(a: i32, b: i32): i32 {
+    return a + b;
+}
+
+def main() {
+    val x: i32 = add(1, 2);
+}
+"#
+            .to_string(),
+            hover_line: 0,
+            hover_char: 4,
+            signature_line: 5,
+            signature_char: 21,
+            completion_line: 5,
+            completion_char: 17,
+            definition_line: 5,
+            definition_char: 20,
+            references_line: 0,
+            references_char: 4,
+            rename_line: 0,
+            rename_char: 4,
+        }),
         _ => None,
     }
 }
 
 pub fn list_supported_languages() -> Vec<&'static str> {
     vec![
+        "axe",
         "bash",
         "c",
         "coffeescript",
@@ -1085,6 +1217,7 @@ pub fn list_supported_languages() -> Vec<&'static str> {
         "erlang",
         "fish",
         "fortran",
+        "fsharp",
         "go",
         "hare",
         "haskell",
@@ -1098,6 +1231,8 @@ pub fn list_supported_languages() -> Vec<&'static str> {
         "lua",
         "mojo",
         "nim",
+        "oberon",
+        "ocaml",
         "perl",
         "php",
         "pony",
@@ -1112,6 +1247,7 @@ pub fn list_supported_languages() -> Vec<&'static str> {
         "shell",
         "swift",
         "typescript",
+        "vala",
         "zig",
     ]
 }

@@ -129,19 +129,18 @@ fn main() {
 
 fn print_usage() {
     eprintln!(
-        r#"
-  lhc - LSP Health Checker
+        r#"lhc - LSP Health Checker
 
-  Usage: lhc <lsp-server> [--log] [--lang=<lang>] [--ref=<file>] [--lsp-flags="<flags>"] [--list-langs]
+Usage: lhc <lsp-server> [--log] [--lang=<lang>] [--ref=<file>] [--lsp-flags="<flags>"] [--list-langs]
 
-  Options:
+Options:
     --lang=<lang>       Use a language-specific sample (e.g. rust, c, cpp, etc...)
     --ref=<file>        Use a custom source file for testing
     --log               Write errors to lhc-<timestamp>.log file
     --lsp-flags="<f>"   Pass flags to the LSP server
     --list-langs        List all built-in languages
 
-  Examples:
+For example:
     lhc clangd --lang=c --log
     lhc liger --lang=crystal
     lhc zls --lang=zig
@@ -153,7 +152,7 @@ fn print_usage() {
 
 fn print_supported_languages() {
     let languages = languages::list_supported_languages();
-    println!("\nBuiltin Languages ({}):\n", languages.len());
+    println!("Builtin Languages ({}):\n", languages.len());
 
     for (i, lang) in languages.iter().enumerate() {
         if (i + 1) % 4 == 0 {
