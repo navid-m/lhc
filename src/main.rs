@@ -21,21 +21,27 @@ fn main() {
     }
 
     let server_path = &args[1];
-    let mut server_args: Vec<String> = Vec::new();
+    let server_args: Vec<String> = Vec::new();
     let mut enable_logging = false;
     let mut language: Option<String> = None;
     let mut ref_file: Option<String> = None;
+    let mut seen_required = false;
 
     for arg in args[2..].iter() {
         if arg == "--log" {
             enable_logging = true;
         } else if let Some(lang) = arg.strip_prefix("--language=") {
             language = Some(lang.to_string());
+            seen_required = true;
         } else if let Some(ref_path) = arg.strip_prefix("--ref=") {
             ref_file = Some(ref_path.to_string());
-        } else {
-            server_args.push(arg.clone());
+            seen_required = true;
         }
+    }
+
+    if !seen_required {
+        eprintln!("Either the --language=... or --ref=... flags are required.");
+        return;
     }
 
     let log_file_path = if enable_logging {
@@ -55,13 +61,14 @@ fn main() {
     );
     eprintln!("{}", starter_box.to_string());
 
-    let mut health_checker = match HealthChecker::init(server_path, &server_args, log_file_path, language, ref_file) {
-        Ok(checker) => checker,
-        Err(e) => {
-            eprintln!("Failed to initialize health checker: {}", e);
-            process::exit(1);
-        }
-    };
+    let mut health_checker =
+        match HealthChecker::init(server_path, &server_args, log_file_path, language, ref_file) {
+            Ok(checker) => checker,
+            Err(e) => {
+                eprintln!("Failed to initialize health checker: {}", e);
+                process::exit(1);
+            }
+        };
 
     let results = match health_checker.run_all_checks() {
         Ok(results) => results,
