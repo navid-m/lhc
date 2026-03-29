@@ -79,6 +79,10 @@ pub fn render_table(results: &[CheckResult]) {
         Cell::new(skipped),
     ]);
 
+    summary_table.column_mut(3).unwrap().set_constraint(
+        comfy_table::ColumnConstraint::LowerBoundary(comfy_table::Width::Percentage(30)),
+    );
+
     let mut health_box = Table::new();
     health_box.load_preset(comfy_table::presets::UTF8_BORDERS_ONLY);
     if failed == 0 && timed_out == 0 {
