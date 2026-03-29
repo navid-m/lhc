@@ -21,8 +21,14 @@ fn main() {
 
     let server_path = &args[1];
     let server_args: Vec<String> = args[2..].to_vec();
+    let mut starter_box = comfy_table::Table::new();
+    starter_box.load_preset(comfy_table::presets::UTF8_BORDERS_ONLY);
+    starter_box.add_row(vec![comfy_table::Cell::new(format!(
+        "Server: {}",
+        server_path
+    ))]);
 
-    eprintln!("Server: {}", server_path);
+    eprintln!("{}", starter_box.to_string());
 
     let mut health_checker = match HealthChecker::init(server_path, &server_args) {
         Ok(checker) => checker,
