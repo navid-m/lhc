@@ -58,10 +58,12 @@ fn main() {
         "Server: {}",
         server_path
     ))]);
+
     starter_box.add_row(vec![comfy_table::Cell::new(format!(
         "Language: {}",
         language.clone().unwrap().to_string()
     ))]);
+
     starter_box.column_mut(0).unwrap().set_constraint(
         comfy_table::ColumnConstraint::LowerBoundary(comfy_table::Width::Percentage(46)),
     );
