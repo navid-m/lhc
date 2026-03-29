@@ -129,7 +129,7 @@ fn print_usage() {
   Options:
     --lang=<lang>       Use a language-specific sample (e.g. rust, c, cpp, etc...)
     --ref=<file>        Use a custom source file for testing
-    --log               Write errors to lhc-TIMESTAMP.log file
+    --log               Write errors to lhc-<timestamp>.log file
     --lsp-flags="<f>"   Pass flags to the LSP server
 
   Examples:
