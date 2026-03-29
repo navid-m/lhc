@@ -919,7 +919,7 @@ impl HealthChecker {
                     "character": 0
                 },
                 "end": {
-                    "line": 10,
+                    "line": 7,
                     "character": 0
                 }
             }

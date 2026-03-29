@@ -19,7 +19,12 @@ pub struct LanguageSample {
 
 impl LanguageSample {
     pub fn uri(&self) -> String {
-        format!("file:///tmp/lsp_health_check{}", self.file_extension)
+        if cfg!(windows) {
+            // Use Windows temp directory format
+            format!("file:///C:/Temp/lsp_health_check{}", self.file_extension)
+        } else {
+            format!("file:///tmp/lsp_health_check{}", self.file_extension)
+        }
     }
 }
 
@@ -38,7 +43,7 @@ fn main() {
 }
 "#
             .to_string(),
-            hover_line: 2,
+            hover_line: 0,
             hover_char: 7,
             signature_line: 5,
             signature_char: 19,
@@ -49,7 +54,7 @@ fn main() {
             references_line: 0,
             references_char: 7,
             rename_line: 0,
-            rename_char: 7,
+            rename_char: 3,
         }),
         "c" => Some(LanguageSample {
             language_id: "c".to_string(),
