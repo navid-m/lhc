@@ -83,14 +83,19 @@ fn main() {
 
     println!("{}", starter_box.to_string());
 
-    let mut health_checker =
-        match HealthChecker::init(server_path, &server_args, log_file_path, language, ref_file) {
-            Ok(checker) => checker,
-            Err(e) => {
-                eprintln!("Failed to initialize health checker: {}", e);
-                process::exit(1);
-            }
-        };
+    let mut health_checker = match HealthChecker::init(
+        server_path,
+        &server_args,
+        log_file_path,
+        language.clone(),
+        ref_file,
+    ) {
+        Ok(checker) => checker,
+        Err(e) => {
+            eprintln!("Failed to initialize health checker: {}", e);
+            process::exit(1);
+        }
+    };
 
     let results = match health_checker.run_all_checks() {
         Ok(results) => results,
@@ -102,7 +107,7 @@ fn main() {
 
     health_checker.deinit();
 
-    display::render_table(&results);
+    display::render_table(&results, server_path.clone(), language.unwrap());
 }
 
 fn print_usage() {

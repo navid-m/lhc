@@ -7,7 +7,7 @@ const ICON_FAIL: &str = "✗";
 const ICON_SKIP: &str = "○";
 const ICON_TIME: &str = "◌";
 
-pub fn render_table(results: &[CheckResult]) {
+pub fn render_table(results: &[CheckResult], server_path: String, language: String) {
     let mut passed: usize = 0;
     let mut failed: usize = 0;
     let mut skipped: usize = 0;
@@ -84,11 +84,16 @@ pub fn render_table(results: &[CheckResult]) {
     );
 
     let mut health_box = Table::new();
+
     health_box.load_preset(comfy_table::presets::UTF8_BORDERS_ONLY);
+
     if failed == 0 && timed_out == 0 {
         health_box.add_row(vec![Cell::new("Server is healthy")]);
     } else {
-        health_box.add_row(vec![Cell::new("Server has issues\n")]);
+        health_box.add_row(vec![Cell::new(format!(
+            "Server {} has issues with language {}.\n",
+            server_path, language
+        ))]);
         health_box.add_row(vec![Cell::new(summary_table.to_string())]);
     }
 
