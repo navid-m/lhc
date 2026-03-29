@@ -71,7 +71,7 @@ pub fn render_table(results: &[CheckResult]) {
         Cell::new("Skipped"),
     ]);
 
-    summary_table.load_preset(comfy_table::presets::ASCII_MARKDOWN);
+    summary_table.load_preset(UTF8_HORIZONTAL_ONLY);
     summary_table.add_row(vec![
         Cell::new(passed),
         Cell::new(timed_out),
