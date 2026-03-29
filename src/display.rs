@@ -63,18 +63,23 @@ pub fn render_table(results: &[CheckResult]) {
     println!("{}", table);
     println!();
 
-    print!("  Summary:  ");
-    print!("{} {} passed", ICON_PASS, passed,);
-    if failed > 0 {
-        print!("  {} {} failed", ICON_FAIL, failed,);
-    }
-    if timed_out > 0 {
-        print!("  {} {} timed out", ICON_TIME, timed_out,);
-    }
-    if skipped > 0 {
-        print!("  {} {} skipped", ICON_SKIP, skipped,);
-    }
-    println!();
+    let mut summary_table = Table::new();
+    summary_table.set_header(vec![
+        Cell::new("Passed"),
+        Cell::new("Failed"),
+        Cell::new("Timed out"),
+        Cell::new("Skipped"),
+    ]);
+
+    summary_table.load_preset(comfy_table::presets::ASCII_MARKDOWN);
+    summary_table.add_row(vec![
+        Cell::new(passed),
+        Cell::new(timed_out),
+        Cell::new(failed),
+        Cell::new(skipped),
+    ]);
+
+    println!("{}", summary_table);
     println!();
 
     if failed == 0 && timed_out == 0 {
