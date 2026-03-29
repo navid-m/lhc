@@ -53,7 +53,6 @@ pub const HealthChecker = struct {
 
     pub fn deinit(self: *HealthChecker) void {
         self.client.deinit();
-        self.results.deinit(std.heap.page_allocator);
     }
 
     pub fn runAllChecks(self: *HealthChecker) ![]CheckResult {
