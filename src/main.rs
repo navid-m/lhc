@@ -44,9 +44,21 @@ fn main() {
         return;
     }
 
+    let server_path_raw = std::path::Path::new(server_path);
+    let file_stem = server_path_raw.file_stem().and_then(|s| s.to_str());
+    let clean_server_path: String;
+
+    match file_stem {
+        Some(_) => clean_server_path = file_stem.unwrap().to_string(),
+        None => {
+            eprintln!("Error: Couldn't extract stem from server path");
+            return;
+        }
+    }
+
     let log_file_path = if enable_logging {
         let timestamp = chrono::Local::now().format("%Y%m%d-%H%M%S").to_string();
-        Some(format!("lhc-{}.log", timestamp))
+        Some(format!("lhc-{}-{}.log", clean_server_path, timestamp))
     } else {
         None
     };
