@@ -28,7 +28,6 @@ pub fn main() !void {
     const server_path = args[1];
     const server_args = args[2..];
 
-    std.debug.print("\n  LSP Health Checker\n", .{});
     std.debug.print("  Server: {s}\n\n", .{server_path});
 
     var health_checker = try checker.HealthChecker.init(allocator, server_path, server_args);
