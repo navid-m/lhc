@@ -27,7 +27,9 @@ fn main() {
         "Server: {}",
         server_path
     ))]);
-
+    starter_box.column_mut(0).unwrap().set_constraint(
+        comfy_table::ColumnConstraint::LowerBoundary(comfy_table::Width::Percentage(46)),
+    );
     eprintln!("{}", starter_box.to_string());
 
     let mut health_checker = match HealthChecker::init(server_path, &server_args) {
