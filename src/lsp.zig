@@ -166,6 +166,7 @@ pub const Client = struct {
 
         try self.sendRaw(buf.items);
     }
+
     fn sendRaw(self: *Client, content: []const u8) !void {
         const stdin = self.child.stdin orelse return error.NoStdin;
         var header_buf: [64]u8 = undefined;
