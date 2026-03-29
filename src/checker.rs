@@ -1,21 +1,11 @@
+use crate::languages::LanguageSample;
 use crate::lsp::{Client, ServerCapabilities};
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::fs::File;
-use std::io::{BufWriter, Write};
+use std::io::{BufWriter, Read, Write};
 use std::time::{Duration, Instant};
 
 pub const TIMEOUT_MS: u64 = 5000;
-
-const DOC_URI: &str = "file:///tmp/lsp_health_check.rs";
-const DOC_CONTENT: &str = r#"fn add(a: i32, b: i32) -> i32 {
-    a + b
-}
-
-fn main() {
-    let x = add(1, 2);
-    let _ = x;
-}
-"#;
 
 fn extract_error_message(resp: &Value) -> String {
     if let Some(error) = resp.get("error") {
@@ -69,6 +59,7 @@ pub struct HealthChecker {
     results: Vec<CheckResult>,
     log_writer: Option<BufWriter<File>>,
     server_name: String,
+    sample: LanguageSample,
 }
 
 impl HealthChecker {
@@ -76,6 +67,8 @@ impl HealthChecker {
         server_path: &str,
         server_args: &[String],
         log_file_path: Option<String>,
+        language: Option<String>,
+        ref_file: Option<String>,
     ) -> std::io::Result<Self> {
         let client = Client::init(server_path, server_args)?;
 
@@ -92,15 +85,76 @@ impl HealthChecker {
             .unwrap_or(server_path)
             .to_string();
 
+        let sample = if let Some(ref_path) = ref_file {
+            let mut file = File::open(&ref_path)?;
+            let mut content = String::new();
+            file.read_to_string(&mut content)?;
+
+            let ext = std::path::Path::new(&ref_path)
+                .extension()
+                .and_then(|e| e.to_str())
+                .unwrap_or("txt")
+                .to_string();
+
+            let language_id = match ext.as_str() {
+                "rs" => "rust".to_string(),
+                "c" => "c".to_string(),
+                "cpp" | "cc" | "cxx" | "h" | "hpp" => "cpp".to_string(),
+                "py" => "python".to_string(),
+                "d" => "d".to_string(),
+                "zig" => "zig".to_string(),
+                "cs" => "csharp".to_string(),
+                "nim" => "nim".to_string(),
+                "ha" => "hare".to_string(),
+                "scm" | "ss" => "scheme".to_string(),
+                "java" => "java".to_string(),
+                "kt" | "kts" => "kotlin".to_string(),
+                "cr" => "crystal".to_string(),
+                _ => ext.clone(),
+            };
+
+            LanguageSample {
+                language_id,
+                file_extension: format!(".{}", ext),
+                content,
+                hover_line: 0,
+                hover_char: 0,
+                signature_line: 0,
+                signature_char: 0,
+                completion_line: 0,
+                completion_char: 0,
+                definition_line: 0,
+                definition_char: 0,
+                references_line: 0,
+                references_char: 0,
+                rename_line: 0,
+                rename_char: 0,
+            }
+        } else if let Some(lang) = language {
+            crate::languages::get_sample(&lang).ok_or_else(|| {
+            std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                format!(
+                    "Unknown language: {}. Supported: rust, c, cpp, python, d, zig, csharp, nim, hare, scheme, java, kotlin, crystal",
+                    lang
+                ),
+            )
+        })?
+        } else {
+            crate::languages::get_sample("rust").ok_or_else(|| {
+                std::io::Error::new(std::io::ErrorKind::Other, "Failed to get default sample")
+            })?
+        };
+
         Ok(HealthChecker {
             client,
             capabilities: ServerCapabilities::default(),
             results: Vec::new(),
             log_writer,
             server_name,
+            sample,
         })
     }
-
     pub fn deinit(&mut self) {
         if let Some(ref mut writer) = self.log_writer {
             let _ = writer.flush();
@@ -153,10 +207,7 @@ impl HealthChecker {
         duration_ms: i64,
     ) {
         if let Some(ref mut writer) = self.log_writer {
-            let line = format!(
-                "{}:{} -> {}\n",
-                self.server_name, name, actual_error
-            );
+            let line = format!("{}:{} -> {}\n", self.server_name, name, actual_error);
             let _ = writer.write_all(line.as_bytes());
         }
 
@@ -232,10 +283,10 @@ impl HealthChecker {
 
         let params = json!({
             "textDocument": {
-                "uri": DOC_URI,
-                "languageId": "rust",
+                "uri": self.sample.uri(),
+                "languageId": self.sample.language_id,
                 "version": 1,
-                "text": DOC_CONTENT
+                "text": self.sample.content
             }
         });
 
@@ -268,7 +319,7 @@ impl HealthChecker {
         }
 
         let t0 = Instant::now();
-        let params = self.text_document_position(2, 7);
+        let params = self.text_document_position(self.sample.hover_line, self.sample.hover_char);
         let id = self
             .client
             .send_request("textDocument/hover", Some(params))?;
@@ -326,7 +377,8 @@ impl HealthChecker {
         }
 
         let t0 = Instant::now();
-        let params = self.text_document_position(8, 19);
+        let params =
+            self.text_document_position(self.sample.signature_line, self.sample.signature_char);
         let id = self
             .client
             .send_request("textDocument/signatureHelp", Some(params))?;
@@ -384,7 +436,8 @@ impl HealthChecker {
         }
 
         let t0 = Instant::now();
-        let params = self.text_document_position(8, 14);
+        let params =
+            self.text_document_position(self.sample.completion_line, self.sample.completion_char);
         let id = self
             .client
             .send_request("textDocument/completion", Some(params))?;
@@ -442,7 +495,8 @@ impl HealthChecker {
         }
 
         let t0 = Instant::now();
-        let params = self.text_document_position(8, 18);
+        let params =
+            self.text_document_position(self.sample.definition_line, self.sample.definition_char);
         let id = self
             .client
             .send_request("textDocument/definition", Some(params))?;
@@ -503,11 +557,11 @@ impl HealthChecker {
 
         let params = json!({
             "textDocument": {
-                "uri": DOC_URI
+                "uri": self.sample.uri()
             },
             "position": {
-                "line": 2,
-                "character": 7
+                "line": self.sample.references_line,
+                "character": self.sample.references_char
             },
             "context": {
                 "includeDeclaration": true
@@ -573,7 +627,7 @@ impl HealthChecker {
         let t0 = Instant::now();
         let params = json!({
             "textDocument": {
-                "uri": DOC_URI
+                "uri": self.sample.uri()
             }
         });
         let id = self
@@ -635,7 +689,7 @@ impl HealthChecker {
         let t0 = Instant::now();
         let params = json!({
             "textDocument": {
-                "uri": DOC_URI
+                "uri": self.sample.uri()
             },
             "options": {
                 "tabSize": 4,
@@ -701,7 +755,7 @@ impl HealthChecker {
         let t0 = Instant::now();
         let params = json!({
             "textDocument": {
-                "uri": DOC_URI
+                "uri": self.sample.uri()
             },
             "range": {
                 "start": {
@@ -776,11 +830,11 @@ impl HealthChecker {
         let t0 = Instant::now();
         let params = json!({
             "textDocument": {
-                "uri": DOC_URI
+                "uri": self.sample.uri()
             },
             "position": {
-                "line": 2,
-                "character": 7
+                "line": self.sample.rename_line,
+                "character": self.sample.rename_char
             },
             "newName": "sum"
         });
@@ -843,7 +897,7 @@ impl HealthChecker {
         let t0 = Instant::now();
         let params = json!({
             "textDocument": {
-                "uri": DOC_URI
+                "uri": self.sample.uri()
             },
             "range": {
                 "start": {
@@ -1063,7 +1117,7 @@ impl HealthChecker {
     fn text_document_position(&self, line: i64, character: i64) -> Value {
         json!({
             "textDocument": {
-                "uri": DOC_URI
+                "uri": self.sample.uri()
             },
             "position": {
                 "line": line,

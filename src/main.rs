@@ -1,5 +1,6 @@
 mod checker;
 mod display;
+mod languages;
 mod lsp;
 mod windows;
 
@@ -22,10 +23,16 @@ fn main() {
     let server_path = &args[1];
     let mut server_args: Vec<String> = Vec::new();
     let mut enable_logging = false;
+    let mut language: Option<String> = None;
+    let mut ref_file: Option<String> = None;
 
     for arg in args[2..].iter() {
         if arg == "--log" {
             enable_logging = true;
+        } else if let Some(lang) = arg.strip_prefix("--language=") {
+            language = Some(lang.to_string());
+        } else if let Some(ref_path) = arg.strip_prefix("--ref=") {
+            ref_file = Some(ref_path.to_string());
         } else {
             server_args.push(arg.clone());
         }
@@ -48,7 +55,7 @@ fn main() {
     );
     eprintln!("{}", starter_box.to_string());
 
-    let mut health_checker = match HealthChecker::init(server_path, &server_args, log_file_path) {
+    let mut health_checker = match HealthChecker::init(server_path, &server_args, log_file_path, language, ref_file) {
         Ok(checker) => checker,
         Err(e) => {
             eprintln!("Failed to initialize health checker: {}", e);
@@ -74,14 +81,21 @@ fn print_usage() {
         r#"
   lhc - LSP Health Checker
 
-  Usage: lhc <lsp-server-path> [server-args...] [--log]
+  Usage: lhc <lsp-server-path> [server-args...] [--log] [--language=<lang>] [--ref=<file>]
+
+  Options:
+    --language=<lang>   Use a language-specific sample (rust, c, cpp, python, d, zig,
+                        csharp, nim, hare, scheme, java, kotlin, crystal)
+    --ref=<file>        Use a custom source file for testing
+    --log               Write errors to lhc-TIMESTAMP.log file
 
   Examples:
     lhc rust-analyzer
-    lhc clangd --log
-    lhc liger
-    lhc zls
-    lhc pyright-langserver --stdio --log
+    lhc clangd --language=c --log
+    lhc liger --language=crystal
+    lhc zls --language=zig
+    lhc pyright-langserver --stdio --language=python
+    lhc clangd --ref=/path/to/test.cpp --log
 
   Checks performed:
     · initialize / initialized handshake
