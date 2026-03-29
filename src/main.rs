@@ -25,6 +25,7 @@ fn main() {
     let mut enable_logging = false;
     let mut language: Option<String> = None;
     let mut ref_file: Option<String> = None;
+    let mut lsp_flags: Option<String> = None;
     let mut seen_required = false;
 
     for arg in args[2..].iter() {
@@ -36,8 +37,14 @@ fn main() {
         } else if let Some(ref_path) = arg.strip_prefix("--ref=") {
             ref_file = Some(ref_path.to_string());
             seen_required = true;
-        } else {
-            server_args.push(arg.clone());
+        } else if let Some(flags) = arg.strip_prefix("--lsp-flags=") {
+            lsp_flags = Some(flags.to_string());
+        }
+    }
+
+    if let Some(flags) = lsp_flags {
+        for flag in flags.split_whitespace() {
+            server_args.push(flag.to_string());
         }
     }
 
@@ -117,18 +124,20 @@ fn print_usage() {
         r#"
   lhc - LSP Health Checker
 
-  Usage: lhc <lsp-server> [server-args...] [--log] [--lang=<lang>] [--ref=<file>]
+  Usage: lhc <lsp-server> [--log] [--lang=<lang>] [--ref=<file>] [--lsp-flags="<flags>"]
 
   Options:
     --lang=<lang>       Use a language-specific sample (e.g. rust, c, cpp, etc...)
     --ref=<file>        Use a custom source file for testing
     --log               Write errors to lhc-TIMESTAMP.log file
+    --lsp-flags="<f>"   Pass flags to the LSP server
 
   Examples:
-    lhc clangd --language=c --log
-    lhc liger --language=crystal
-    lhc zls --language=zig
-    lhc pyright-langserver --stdio --language=python
+    lhc clangd --lang=c --log
+    lhc liger --lang=crystal
+    lhc zls --lang=zig
+    lhc rust-analyzer --lang=rust --lsp-flags="--stdio"
+    lhc pyright-langserver --lang=python --lsp-flags="--stdio"
     lhc clangd --ref=/path/to/test.cpp --log
 "#,
     );
