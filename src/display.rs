@@ -82,11 +82,18 @@ pub fn render_table(results: &[CheckResult]) {
     let mut health_box = Table::new();
     health_box.load_preset(comfy_table::presets::UTF8_BORDERS_ONLY);
     if failed == 0 && timed_out == 0 {
-        health_box.add_row(vec![Cell::new("[ok] Server is healthy")]);
+        health_box.add_row(vec![Cell::new("[/] Server is healthy\n")]);
     } else {
-        health_box.add_row(vec![Cell::new("[!] Server has issues")]);
+        health_box.add_row(vec![Cell::new("[!] Server has issues\n")]);
         health_box.add_row(vec![Cell::new(summary_table.to_string())]);
     }
+
+    health_box
+        .column_mut(0)
+        .unwrap()
+        .set_constraint(comfy_table::ColumnConstraint::LowerBoundary(
+            comfy_table::Width::Percentage(45),
+        ));
 
     println!("{}", health_box);
 }
