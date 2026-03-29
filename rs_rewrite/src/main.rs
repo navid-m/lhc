@@ -22,7 +22,7 @@ fn main() {
     let server_path = &args[1];
     let server_args: Vec<String> = args[2..].to_vec();
 
-    eprintln!("  Server: {}", server_path);
+    eprintln!("Server: {}", server_path);
     eprintln!();
 
     let mut health_checker = match HealthChecker::init(server_path, &server_args) {

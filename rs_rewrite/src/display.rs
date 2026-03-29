@@ -1,5 +1,5 @@
 use crate::checker::{CheckResult, CheckStatus};
-use comfy_table::presets::UTF8_FULL;
+use comfy_table::presets::{UTF8_FULL, UTF8_HORIZONTAL_ONLY};
 use comfy_table::{Cell, Color, ContentArrangement, Table};
 
 const ICON_PASS: &str = "✓";
@@ -24,7 +24,7 @@ pub fn render_table(results: &[CheckResult]) {
 
     let mut table = Table::new();
     table
-        .load_preset(UTF8_FULL)
+        .load_preset(UTF8_HORIZONTAL_ONLY)
         .set_content_arrangement(ContentArrangement::Dynamic)
         .set_header(vec![
             Cell::new("Status").fg(Color::Cyan),
