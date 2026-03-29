@@ -1197,15 +1197,261 @@ def main() {
             rename_line: 0,
             rename_char: 4,
         }),
+        "ada" | "adb" | "ads" => Some(LanguageSample {
+            language_id: "ada".to_string(),
+            file_extension: ".adb".to_string(),
+            content: r#"procedure Main is
+   function Add(A, B : Integer) return Integer is
+   begin
+      return A + B;
+   end Add;
+
+   X : Integer;
+begin
+   X := Add(1, 2);
+end Main;
+"#
+            .to_string(),
+            hover_line: 1,
+            hover_char: 13,
+            signature_line: 8,
+            signature_char: 11,
+            completion_line: 8,
+            completion_char: 8,
+            definition_line: 8,
+            definition_char: 10,
+            references_line: 1,
+            references_char: 13,
+            rename_line: 1,
+            rename_char: 13,
+        }),
+        "rebol" | "reb" => Some(LanguageSample {
+            language_id: "rebol".to_string(),
+            file_extension: ".reb".to_string(),
+            content: r#"REBOL []
+
+add: func [a [integer!] b [integer!]] [
+    a + b
+]
+
+main: func [] [
+    x: add 1 2
+    x
+]
+"#
+            .to_string(),
+            hover_line: 2,
+            hover_char: 0,
+            signature_line: 7,
+            signature_char: 9,
+            completion_line: 7,
+            completion_char: 7,
+            definition_line: 7,
+            definition_char: 8,
+            references_line: 2,
+            references_char: 0,
+            rename_line: 2,
+            rename_char: 0,
+        }),
+        "red" => Some(LanguageSample {
+            language_id: "red".to_string(),
+            file_extension: ".red".to_string(),
+            content: r#"Red []
+
+add: func [a [integer!] b [integer!]] [
+    a + b
+]
+
+main: func [] [
+    x: add 1 2
+    x
+]
+"#
+            .to_string(),
+            hover_line: 2,
+            hover_char: 0,
+            signature_line: 7,
+            signature_char: 9,
+            completion_line: 7,
+            completion_char: 7,
+            definition_line: 7,
+            definition_char: 8,
+            references_line: 2,
+            references_char: 0,
+            rename_line: 2,
+            rename_char: 0,
+        }),
+        "gdscript" | "gd" => Some(LanguageSample {
+            language_id: "gdscript".to_string(),
+            file_extension: ".gd".to_string(),
+            content: r#"extends Node
+
+func add(a: int, b: int) -> int:
+    return a + b
+
+func _ready():
+    var x = add(1, 2)
+"#
+            .to_string(),
+            hover_line: 2,
+            hover_char: 5,
+            signature_line: 6,
+            signature_char: 16,
+            completion_line: 6,
+            completion_char: 12,
+            definition_line: 6,
+            definition_char: 15,
+            references_line: 2,
+            references_char: 5,
+            rename_line: 2,
+            rename_char: 5,
+        }),
+        "clojure" | "clj" | "cljs" => Some(LanguageSample {
+            language_id: "clojure".to_string(),
+            file_extension: ".clj".to_string(),
+            content: r#"(defn add [a b]
+  (+ a b))
+
+(defn main []
+  (let [x (add 1 2)]
+    x))
+"#
+            .to_string(),
+            hover_line: 0,
+            hover_char: 6,
+            signature_line: 4,
+            signature_char: 13,
+            completion_line: 4,
+            completion_char: 11,
+            definition_line: 4,
+            definition_char: 12,
+            references_line: 0,
+            references_char: 6,
+            rename_line: 0,
+            rename_char: 6,
+        }),
+        "prolog" | "pro" => Some(LanguageSample {
+            language_id: "prolog".to_string(),
+            file_extension: ".pl".to_string(),
+            content: r#"add(A, B, Result) :-
+    Result is A + B.
+
+main :-
+    add(1, 2, X),
+    write(X).
+"#
+            .to_string(),
+            hover_line: 0,
+            hover_char: 0,
+            signature_line: 4,
+            signature_char: 6,
+            completion_line: 4,
+            completion_char: 4,
+            definition_line: 4,
+            definition_char: 5,
+            references_line: 0,
+            references_char: 0,
+            rename_line: 0,
+            rename_char: 0,
+        }),
+        "groovy" | "gvy" => Some(LanguageSample {
+            language_id: "groovy".to_string(),
+            file_extension: ".groovy".to_string(),
+            content: r#"def add(int a, int b) {
+    return a + b
+}
+
+def main() {
+    def x = add(1, 2)
+    return x
+}
+"#
+            .to_string(),
+            hover_line: 0,
+            hover_char: 4,
+            signature_line: 5,
+            signature_char: 16,
+            completion_line: 5,
+            completion_char: 12,
+            definition_line: 5,
+            definition_char: 15,
+            references_line: 0,
+            references_char: 4,
+            rename_line: 0,
+            rename_char: 4,
+        }),
+        "terraform" | "tf" | "hcl" => Some(LanguageSample {
+            language_id: "terraform".to_string(),
+            file_extension: ".tf".to_string(),
+            content: r#"locals {
+  sum = 1 + 2
+}
+
+variable "a" {
+  type    = number
+  default = 1
+}
+
+variable "b" {
+  type    = number
+  default = 2
+}
+
+output "result" {
+  value = var.a + var.b
+}
+"#
+            .to_string(),
+            hover_line: 5,
+            hover_char: 2,
+            signature_line: 15,
+            signature_char: 12,
+            completion_line: 15,
+            completion_char: 8,
+            definition_line: 15,
+            definition_char: 11,
+            references_line: 5,
+            references_char: 2,
+            rename_line: 5,
+            rename_char: 2,
+        }),
+        "factor" => Some(LanguageSample {
+            language_id: "factor".to_string(),
+            file_extension: ".factor".to_string(),
+            content: r#"USING: math ;
+IN: main
+
+: add ( a b -- result )
+    + ;
+
+: main ( -- )
+    1 2 add drop ;
+"#
+            .to_string(),
+            hover_line: 3,
+            hover_char: 2,
+            signature_line: 7,
+            signature_char: 10,
+            completion_line: 7,
+            completion_char: 8,
+            definition_line: 7,
+            definition_char: 9,
+            references_line: 3,
+            references_char: 2,
+            rename_line: 3,
+            rename_char: 2,
+        }),
         _ => None,
     }
 }
 
 pub fn list_supported_languages() -> Vec<&'static str> {
     vec![
+        "ada",
         "axe",
         "bash",
         "c",
+        "clojure",
         "coffeescript",
         "cpp",
         "crystal",
@@ -1215,10 +1461,13 @@ pub fn list_supported_languages() -> Vec<&'static str> {
         "dart",
         "elixir",
         "erlang",
+        "factor",
         "fish",
         "fortran",
         "fsharp",
+        "gdscript",
         "go",
+        "groovy",
         "hare",
         "haskell",
         "haxe",
@@ -1237,15 +1486,19 @@ pub fn list_supported_languages() -> Vec<&'static str> {
         "php",
         "pony",
         "powershell",
+        "prolog",
         "python",
         "r",
         "raku",
+        "rebol",
+        "red",
         "ruby",
         "rust",
         "scala",
         "scheme",
         "shell",
         "swift",
+        "terraform",
         "typescript",
         "vala",
         "zig",
