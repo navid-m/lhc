@@ -112,6 +112,33 @@ impl HealthChecker {
                 "java" => "java".to_string(),
                 "kt" | "kts" => "kotlin".to_string(),
                 "cr" => "crystal".to_string(),
+                "pl" => "perl".to_string(),
+                "js" => "javascript".to_string(),
+                "ts" => "typescript".to_string(),
+                "go" => "go".to_string(),
+                "rb" => "ruby".to_string(),
+                "php" => "php".to_string(),
+                "swift" => "swift".to_string(),
+                "lua" => "lua".to_string(),
+                "r" => "r".to_string(),
+                "hs" => "haskell".to_string(),
+                "ex" | "exs" => "elixir".to_string(),
+                "erl" => "erlang".to_string(),
+                "scala" => "scala".to_string(),
+                "mojo" => "mojo".to_string(),
+                "pony" => "pony".to_string(),
+                "dart" => "dart".to_string(),
+                "jl" => "julia".to_string(),
+                "lisp" | "cl" => "lisp".to_string(),
+                "f90" | "f95" | "f" => "fortran".to_string(),
+                "coffee" => "coffeescript".to_string(),
+                "pyx" => "cython".to_string(),
+                "fish" => "fish".to_string(),
+                "hx" => "haxe".to_string(),
+                "hc" => "holyc".to_string(),
+                "ps1" => "powershell".to_string(),
+                "sh" | "bash" => "bash".to_string(),
+                "raku" | "pl6" | "p6" => "raku".to_string(),
                 _ => ext.clone(),
             };
 
@@ -137,7 +164,7 @@ impl HealthChecker {
             std::io::Error::new(
                 std::io::ErrorKind::InvalidInput,
                 format!(
-                    "Unknown language: {}. Supported: rust, c, cpp, python, d, zig, csharp, nim, hare, scheme, java, kotlin, crystal",
+                    "Unknown language: {}. Use --list-langs to see all builtin languages, and use --ref=... for custom languages.",
                     lang
                 ),
             )

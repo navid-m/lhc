@@ -20,6 +20,12 @@ fn main() {
         process::exit(1);
     }
 
+    // Check for --list-langs flag
+    if args.len() == 2 && args[1] == "--list-langs" {
+        print_supported_languages();
+        process::exit(0);
+    }
+
     let server_path = &args[1];
     let mut server_args: Vec<String> = Vec::new();
     let mut enable_logging = false;
@@ -31,6 +37,9 @@ fn main() {
     for arg in args[2..].iter() {
         if arg == "--log" {
             enable_logging = true;
+        } else if arg == "--list-langs" {
+            print_supported_languages();
+            process::exit(0);
         } else if let Some(lang) = arg.strip_prefix("--lang=") {
             language = Some(lang.to_string());
             seen_required = true;
@@ -124,21 +133,40 @@ fn print_usage() {
         r#"
   lhc - LSP Health Checker
 
-  Usage: lhc <lsp-server> [--log] [--lang=<lang>] [--ref=<file>] [--lsp-flags="<flags>"]
+  Usage: lhc <lsp-server> [--log] [--lang=<lang>] [--ref=<file>] [--lsp-flags="<flags>"] [--list-langs]
 
   Options:
     --lang=<lang>       Use a language-specific sample (e.g. rust, c, cpp, etc...)
     --ref=<file>        Use a custom source file for testing
     --log               Write errors to lhc-<timestamp>.log file
     --lsp-flags="<f>"   Pass flags to the LSP server
+    --list-langs        List all built-in languages
 
   Examples:
     lhc clangd --lang=c --log
     lhc liger --lang=crystal
     lhc zls --lang=zig
     lhc rust-analyzer --lang=rust --lsp-flags="--stdio"
-    lhc pyright-langserver --lang=python --lsp-flags="--stdio"
     lhc clangd --ref=/path/to/test.cpp --log
 "#,
     );
+}
+
+fn print_supported_languages() {
+    let languages = languages::list_supported_languages();
+    println!("\nBuiltin Languages ({}):\n", languages.len());
+
+    for (i, lang) in languages.iter().enumerate() {
+        if (i + 1) % 4 == 0 {
+            println!("{}", lang);
+        } else {
+            print!("{:<20}", lang);
+        }
+    }
+
+    if languages.len() % 4 != 0 {
+        println!();
+    }
+
+    println!("\nUse --lang=<language> to test with a specific language.");
 }
