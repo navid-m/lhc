@@ -30,7 +30,7 @@ fn main() {
     for arg in args[2..].iter() {
         if arg == "--log" {
             enable_logging = true;
-        } else if let Some(lang) = arg.strip_prefix("--language=") {
+        } else if let Some(lang) = arg.strip_prefix("--lang=") {
             language = Some(lang.to_string());
             seen_required = true;
         } else if let Some(ref_path) = arg.strip_prefix("--ref=") {
@@ -40,7 +40,7 @@ fn main() {
     }
 
     if !seen_required {
-        eprintln!("Either the --language=... or --ref=... flags are required.");
+        eprintln!("Either the --lang=... or --ref=... flags are required.");
         return;
     }
 
@@ -88,37 +88,19 @@ fn print_usage() {
         r#"
   lhc - LSP Health Checker
 
-  Usage: lhc <lsp-server-path> [server-args...] [--log] [--language=<lang>] [--ref=<file>]
+  Usage: lhc <lsp-server> [server-args...] [--log] [--lang=<lang>] [--ref=<file>]
 
   Options:
-    --language=<lang>   Use a language-specific sample (rust, c, cpp, python, d, zig,
-                        csharp, nim, hare, scheme, java, kotlin, crystal)
+    --lang=<lang>       Use a language-specific sample (e.g. rust, c, cpp, etc...)
     --ref=<file>        Use a custom source file for testing
     --log               Write errors to lhc-TIMESTAMP.log file
 
   Examples:
-    lhc rust-analyzer
     lhc clangd --language=c --log
     lhc liger --language=crystal
     lhc zls --language=zig
     lhc pyright-langserver --stdio --language=python
     lhc clangd --ref=/path/to/test.cpp --log
-
-  Checks performed:
-    · initialize / initialized handshake
-    · textDocument/didOpen
-    · textDocument/hover
-    · textDocument/signatureHelp
-    · textDocument/completion
-    · textDocument/definition
-    · textDocument/references
-    · textDocument/documentSymbol
-    · textDocument/formatting
-    · textDocument/codeAction
-    · textDocument/rename
-    · textDocument/inlayHint
-    · workspace/symbol
-    · shutdown / exit
 "#,
     );
 }
