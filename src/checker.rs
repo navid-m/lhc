@@ -99,6 +99,7 @@ impl HealthChecker {
                 .to_string();
 
             let language_id = match ext.as_str() {
+                "axe" => "axe".to_string(),
                 "rs" => "rust".to_string(),
                 "c" => "c".to_string(),
                 "cpp" | "cc" | "cxx" | "h" | "hpp" => "cpp".to_string(),
