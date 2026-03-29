@@ -22,7 +22,6 @@ pub const HealthChecker = struct {
     capabilities: lsp.ServerCapabilities,
     results: std.ArrayList(CheckResult),
 
-    // Synthetic document used for all textDocument/* checks
     const DOC_URI = "file:///tmp/lsp_health_check.zig";
     const DOC_CONTENT =
         \\const std = @import("std");
