@@ -101,7 +101,7 @@ pub fn render_table(results: &[CheckResult], server_path: String, language: Stri
         .column_mut(0)
         .unwrap()
         .set_constraint(comfy_table::ColumnConstraint::LowerBoundary(
-            comfy_table::Width::Percentage(45),
+            comfy_table::Width::Fixed(132),
         ));
 
     println!("{}", health_box);

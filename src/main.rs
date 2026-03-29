@@ -95,7 +95,7 @@ fn main() {
     ))]);
 
     starter_box.column_mut(0).unwrap().set_constraint(
-        comfy_table::ColumnConstraint::LowerBoundary(comfy_table::Width::Percentage(46)),
+        comfy_table::ColumnConstraint::LowerBoundary(comfy_table::Width::Fixed(133)),
     );
 
     println!("{}", starter_box.to_string());
