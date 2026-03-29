@@ -1441,6 +1441,86 @@ IN: main
             rename_line: 3,
             rename_char: 2,
         }),
+        "wren" => Some(LanguageSample {
+            language_id: "wren".to_string(),
+            file_extension: ".wren".to_string(),
+            content: r#"class Main {
+  static add(a, b) {
+    return a + b
+  }
+
+  static main() {
+    var x = add(1, 2)
+  }
+}
+"#
+            .to_string(),
+            hover_line: 1,
+            hover_char: 9,
+            signature_line: 6,
+            signature_char: 16,
+            completion_line: 6,
+            completion_char: 12,
+            definition_line: 6,
+            definition_char: 15,
+            references_line: 1,
+            references_char: 9,
+            rename_line: 1,
+            rename_char: 9,
+        }),
+        "nu" | "nushell" => Some(LanguageSample {
+            language_id: "nu".to_string(),
+            file_extension: ".nu".to_string(),
+            content: r#"def add [a: int, b: int] -> int {
+    $a + $b
+}
+
+def main [] {
+    let x = (add 1 2)
+    $x
+}
+"#
+            .to_string(),
+            hover_line: 0,
+            hover_char: 4,
+            signature_line: 5,
+            signature_char: 15,
+            completion_line: 5,
+            completion_char: 13,
+            definition_line: 5,
+            definition_char: 14,
+            references_line: 0,
+            references_char: 4,
+            rename_line: 0,
+            rename_char: 4,
+        }),
+        "purescript" | "purs" => Some(LanguageSample {
+            language_id: "purescript".to_string(),
+            file_extension: ".purs".to_string(),
+            content: r#"module Main where
+
+add :: Int -> Int -> Int
+add a b = a + b
+
+main :: Effect Unit
+main = do
+  let x = add 1 2
+  pure unit
+"#
+            .to_string(),
+            hover_line: 3,
+            hover_char: 0,
+            signature_line: 7,
+            signature_char: 12,
+            completion_line: 7,
+            completion_char: 10,
+            definition_line: 7,
+            definition_char: 11,
+            references_line: 3,
+            references_char: 0,
+            rename_line: 3,
+            rename_char: 0,
+        }),
         _ => None,
     }
 }
@@ -1480,6 +1560,7 @@ pub fn list_supported_languages() -> Vec<&'static str> {
         "lua",
         "mojo",
         "nim",
+        "nu",
         "oberon",
         "ocaml",
         "perl",
@@ -1487,6 +1568,7 @@ pub fn list_supported_languages() -> Vec<&'static str> {
         "pony",
         "powershell",
         "prolog",
+        "purescript",
         "python",
         "r",
         "raku",
@@ -1501,6 +1583,7 @@ pub fn list_supported_languages() -> Vec<&'static str> {
         "terraform",
         "typescript",
         "vala",
+        "wren",
         "zig",
     ]
 }
