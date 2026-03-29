@@ -154,21 +154,18 @@ pub const Client = struct {
         var buf: std.ArrayList(u8) = .empty;
         defer buf.deinit(std.heap.page_allocator);
 
-        const writer = buf.writer(std.heap.page_allocator);
-        try writer.writeAll("{\"jsonrpc\":\"2.0\",\"method\":\"");
-        try writer.writeAll(method);
-        try writer.writeAll("\"");
+        var writer = buf.writer(std.heap.page_allocator);
+
+        try writer.print("{{\"jsonrpc\":\"2.0\",\"method\":\"{s}\"", .{method});
 
         if (params) |p| {
-            try writer.writeAll(",\"params\":");
-            const fmter = std.json.fmt(p, .{});
-            try writer.writeAll(try std.fmt.allocPrint(std.heap.page_allocator, "{s}", .{fmter.value.string}));
+            try writer.print(",\"params\":{f}", .{std.json.fmt(p, .{})});
         }
+
         try writer.writeAll("}");
 
         try self.sendRaw(buf.items);
     }
-
     fn sendRaw(self: *Client, content: []const u8) !void {
         const stdin = self.child.stdin orelse return error.NoStdin;
         var header_buf: [64]u8 = undefined;
