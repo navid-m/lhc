@@ -38,7 +38,7 @@ pub fn render_table(results: &[CheckResult]) {
         let (icon, color) = match r.status {
             CheckStatus::Passed => (ICON_PASS, Color::Green),
             CheckStatus::Failed => (ICON_FAIL, Color::Red),
-            CheckStatus::Skipped => (ICON_SKIP, Color::Yellow),
+            CheckStatus::Skipped => (ICON_SKIP, Color::DarkGrey),
             CheckStatus::Timeout => (ICON_TIME, Color::Magenta),
         };
 
