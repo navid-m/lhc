@@ -1,8 +1,9 @@
 use crate::lsp::{Client, ServerCapabilities};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::time::{Duration, Instant};
 
 pub const TIMEOUT_MS: u64 = 5000;
+
 const DOC_URI: &str = "file:///tmp/lsp_health_check.rs";
 const DOC_CONTENT: &str = r#"fn add(a: i32, b: i32) -> i32 {
     a + b
@@ -140,7 +141,8 @@ impl HealthChecker {
         }
 
         let initialized_params = json!({});
-        self.client.send_notification("initialized", Some(initialized_params))?;
+        self.client
+            .send_notification("initialized", Some(initialized_params))?;
 
         self.record(
             "Initialize",
@@ -164,7 +166,8 @@ impl HealthChecker {
             }
         });
 
-        self.client.send_notification("textDocument/didOpen", Some(params))?;
+        self.client
+            .send_notification("textDocument/didOpen", Some(params))?;
 
         std::thread::sleep(Duration::from_millis(200));
 
@@ -193,7 +196,9 @@ impl HealthChecker {
 
         let t0 = Instant::now();
         let params = self.text_document_position(2, 7);
-        let id = self.client.send_request("textDocument/hover", Some(params))?;
+        let id = self
+            .client
+            .send_request("textDocument/hover", Some(params))?;
 
         let resp = match self
             .client
@@ -246,8 +251,10 @@ impl HealthChecker {
         }
 
         let t0 = Instant::now();
-        let params = self.text_document_position(8, 19); // inside add(
-        let id = self.client.send_request("textDocument/signatureHelp", Some(params))?;
+        let params = self.text_document_position(8, 19);
+        let id = self
+            .client
+            .send_request("textDocument/signatureHelp", Some(params))?;
 
         let resp = match self
             .client
@@ -300,8 +307,10 @@ impl HealthChecker {
         }
 
         let t0 = Instant::now();
-        let params = self.text_document_position(8, 14); // after 'let x = '
-        let id = self.client.send_request("textDocument/completion", Some(params))?;
+        let params = self.text_document_position(8, 14);
+        let id = self
+            .client
+            .send_request("textDocument/completion", Some(params))?;
 
         let resp = match self
             .client
@@ -354,8 +363,10 @@ impl HealthChecker {
         }
 
         let t0 = Instant::now();
-        let params = self.text_document_position(8, 18); // on 'add' call
-        let id = self.client.send_request("textDocument/definition", Some(params))?;
+        let params = self.text_document_position(8, 18);
+        let id = self
+            .client
+            .send_request("textDocument/definition", Some(params))?;
 
         let resp = match self
             .client
@@ -422,7 +433,9 @@ impl HealthChecker {
             }
         });
 
-        let id = self.client.send_request("textDocument/references", Some(params))?;
+        let id = self
+            .client
+            .send_request("textDocument/references", Some(params))?;
 
         let resp = match self
             .client
@@ -544,7 +557,9 @@ impl HealthChecker {
                 "insertSpaces": true
             }
         });
-        let id = self.client.send_request("textDocument/formatting", Some(params))?;
+        let id = self
+            .client
+            .send_request("textDocument/formatting", Some(params))?;
 
         let resp = match self
             .client
@@ -615,7 +630,9 @@ impl HealthChecker {
                 "diagnostics": []
             }
         });
-        let id = self.client.send_request("textDocument/codeAction", Some(params))?;
+        let id = self
+            .client
+            .send_request("textDocument/codeAction", Some(params))?;
 
         let resp = match self
             .client
@@ -678,7 +695,9 @@ impl HealthChecker {
             },
             "newName": "sum"
         });
-        let id = self.client.send_request("textDocument/rename", Some(params))?;
+        let id = self
+            .client
+            .send_request("textDocument/rename", Some(params))?;
 
         let resp = match self
             .client
@@ -746,7 +765,9 @@ impl HealthChecker {
                 }
             }
         });
-        let id = self.client.send_request("textDocument/inlayHint", Some(params))?;
+        let id = self
+            .client
+            .send_request("textDocument/inlayHint", Some(params))?;
 
         let resp = match self
             .client
