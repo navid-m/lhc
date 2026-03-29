@@ -15,7 +15,7 @@ fn main() {
     let args: Vec<String> = env::args().collect();
 
     if args.len() < 2 {
-        print_usage(&args[0]);
+        print_usage();
         process::exit(1);
     }
 
@@ -45,18 +45,19 @@ fn main() {
     display::render_table(&results);
 }
 
-fn print_usage(program: &str) {
+fn print_usage() {
     eprintln!(
         r#"
   lhc - LSP Health Checker
 
-  Usage: {} <lsp-server-path> [server-args...]
+  Usage: lhc <lsp-server-path> [server-args...]
 
   Examples:
-    {} rust-analyzer
-    {} clangd --log=error
-    {} zls
-    {} pyright-langserver --stdio
+    lhc rust-analyzer
+    lhc clangd --log=error
+    lhc liger
+    lhc zls
+    lhc pyright-langserver --stdio
 
   Checks performed:
     · initialize / initialized handshake
@@ -74,6 +75,5 @@ fn print_usage(program: &str) {
     · workspace/symbol
     · shutdown / exit
 "#,
-        program, program, program, program, program
     );
 }
