@@ -50,6 +50,7 @@ fn main() {
     } else {
         None
     };
+
     let mut starter_box = comfy_table::Table::new();
 
     starter_box.load_preset(comfy_table::presets::UTF8_HORIZONTAL_ONLY);
