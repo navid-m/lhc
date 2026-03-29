@@ -7,6 +7,24 @@ const ICON_FAIL: &str = "✗";
 const ICON_SKIP: &str = "○";
 const ICON_TIME: &str = "◌";
 
+pub fn render_header(server_path: &str, language: &str, table_width: usize) {
+    let mut starter_box = Table::new();
+    starter_box.load_preset(UTF8_HORIZONTAL_ONLY);
+
+    starter_box.add_row(vec![Cell::new(format!("Server: {}", server_path))]);
+    starter_box.add_row(vec![Cell::new(format!("Language: {}", language))]);
+
+    starter_box
+        .column_mut(0)
+        .unwrap()
+        .set_constraint(comfy_table::ColumnConstraint::Boundaries {
+            lower: comfy_table::Width::Fixed(table_width as u16),
+            upper: comfy_table::Width::Fixed(table_width as u16),
+        });
+
+    println!("{}", starter_box);
+}
+
 pub fn render_table(results: &[CheckResult], server_path: String, language: String) {
     let mut passed: usize = 0;
     let mut failed: usize = 0;
@@ -59,8 +77,17 @@ pub fn render_table(results: &[CheckResult], server_path: String, language: Stri
         ]);
     }
 
+    let table_str = table.to_string();
+    let table_width = table_str
+        .lines()
+        .next()
+        .map(|line| line.chars().count())
+        .unwrap_or(132);
+
+    render_header(&server_path, &language, table_width);
+
     println!();
-    println!("{}", table);
+    println!("{}", table_str);
     println!();
 
     let mut summary_table = Table::new();
@@ -85,7 +112,7 @@ pub fn render_table(results: &[CheckResult], server_path: String, language: Stri
 
     let mut health_box = Table::new();
 
-    health_box.load_preset(comfy_table::presets::UTF8_BORDERS_ONLY);
+    health_box.load_preset(comfy_table::presets::UTF8_HORIZONTAL_ONLY);
 
     if failed == 0 && timed_out == 0 {
         health_box.add_row(vec![Cell::new("Server is healthy")]);
@@ -100,9 +127,10 @@ pub fn render_table(results: &[CheckResult], server_path: String, language: Stri
     health_box
         .column_mut(0)
         .unwrap()
-        .set_constraint(comfy_table::ColumnConstraint::LowerBoundary(
-            comfy_table::Width::Fixed(132),
-        ));
+        .set_constraint(comfy_table::ColumnConstraint::Boundaries {
+            lower: comfy_table::Width::Fixed(table_width as u16),
+            upper: comfy_table::Width::Fixed(table_width as u16),
+        });
 
     println!("{}", health_box);
 }
