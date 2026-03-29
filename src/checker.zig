@@ -4,7 +4,7 @@ const lsp = @import("lsp.zig");
 pub const CheckStatus = enum {
     passed,
     failed,
-    skipped, // server doesn't advertise this capability
+    skipped,
     timeout,
 };
 
@@ -105,7 +105,6 @@ pub const HealthChecker = struct {
             self.capabilities = lsp.parseServerCapabilities(result);
         }
 
-        // Send initialized notification
         try self.client.sendNotification("initialized", try self.jsonObject(&.{}));
 
         try self.record("Initialize", "initialize", .passed, "handshake complete", dt);
@@ -125,7 +124,6 @@ pub const HealthChecker = struct {
 
         try self.client.sendNotification("textDocument/didOpen", params);
 
-        // Small delay to let server process
         std.Thread.sleep(200 * std.time.ns_per_ms);
 
         const dt = std.time.milliTimestamp() - t0;
@@ -139,7 +137,7 @@ pub const HealthChecker = struct {
         }
 
         const t0 = std.time.milliTimestamp();
-        const params = try self.textDocumentPosition(2, 7); // on 'add' function name
+        const params = try self.textDocumentPosition(2, 7);
         const id = try self.client.sendRequest("textDocument/hover", params);
 
         var resp = try self.client.readResponse(id, TIMEOUT_MS) orelse {
@@ -444,10 +442,6 @@ pub const HealthChecker = struct {
             try self.record("Shutdown", "shutdown/exit", .passed, "clean exit", dt);
         }
     }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    // Helpers
-    // ──────────────────────────────────────────────────────────────────────────
 
     fn buildInitializeParams(self: *HealthChecker) !std.json.Value {
         return self.jsonObject(&.{
