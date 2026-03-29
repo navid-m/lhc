@@ -64,7 +64,7 @@ pub fn render_table(results: &[CheckResult]) {
     println!();
 
     print!("  Summary:  ");
-    print!("{} passed{}", ICON_PASS, passed,);
+    print!("{} {} passed", ICON_PASS, passed,);
     if failed > 0 {
         print!("  {} {} failed", ICON_FAIL, failed,);
     }
