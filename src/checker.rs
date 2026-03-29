@@ -170,15 +170,15 @@ impl HealthChecker {
 
     pub fn run_all_checks(&mut self) -> std::io::Result<Vec<CheckResult>> {
         let total_checks = 26;
-        
+
         let pb = ProgressBar::new(total_checks);
         pb.set_style(
             ProgressStyle::default_bar()
                 .template("{spinner:.green} [{bar:40.cyan/blue}] {pos}/{len} {msg}")
                 .unwrap()
-                .progress_chars("█▓▒░ ")
+                .progress_chars("█▓▒░ "),
         );
-        
+
         self.progress_bar = Some(pb);
         self.check_initialize()?;
         self.check_did_open()?;
@@ -207,11 +207,11 @@ impl HealthChecker {
         self.check_did_change_workspace_folders()?;
         self.check_execute_command()?;
         self.check_shutdown()?;
-        
+
         if let Some(pb) = &self.progress_bar {
             pb.finish_and_clear();
         }
-        
+
         Ok(self.results.clone())
     }
 
@@ -227,7 +227,7 @@ impl HealthChecker {
             pb.inc(1);
             pb.set_message(format!("{}", name));
         }
-        
+
         self.results.push(CheckResult {
             name,
             method,
@@ -250,7 +250,7 @@ impl HealthChecker {
             pb.inc(1);
             pb.set_message(format!("{}", name));
         }
-        
+
         if let Some(ref mut writer) = self.log_writer {
             let line = format!("{}:{} -> {}\n", self.server_name, name, actual_error);
             let _ = writer.write_all(line.as_bytes());
@@ -274,9 +274,7 @@ impl HealthChecker {
             .client
             .read_response(id, Duration::from_millis(TIMEOUT_MS))?
         {
-            Some(r) => {
-                r
-            }
+            Some(r) => r,
             None => {
                 self.record(
                     "Initialize",
