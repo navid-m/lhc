@@ -121,6 +121,35 @@ fn main() {
         }
     };
 
+    if let std::ops::ControlFlow::Break(_) = run_diff_checks(
+        server_path,
+        &language,
+        ref_file,
+        diff_server,
+        &mut health_checker,
+        &results,
+    ) {
+        return;
+    }
+
+    health_checker.deinit();
+
+    display::render_table(
+        &results,
+        server_path.clone(),
+        language.unwrap(),
+        json_output,
+    );
+}
+
+fn run_diff_checks(
+    server_path: &String,
+    language: &Option<String>,
+    ref_file: Option<String>,
+    diff_server: Option<String>,
+    health_checker: &mut HealthChecker,
+    results: &Vec<checker::CheckResult>,
+) -> std::ops::ControlFlow<()> {
     if let Some(ref diff_path) = diff_server {
         let caps_a = health_checker.get_capabilities().clone();
         health_checker.deinit();
@@ -189,44 +218,35 @@ fn main() {
                 }
 
                 checker_b.deinit();
-                let lang = language.unwrap_or_else(|| "unknown".to_string());
+                let lang = language.as_deref().unwrap_or("unknown");
                 display::render_diff(
                     server_path,
-                    &results,
+                    results,
                     &caps_a,
                     diff_path,
                     &partial_results,
                     &caps_b,
                     &lang,
                 );
-                return;
+                return std::ops::ControlFlow::Break(());
             }
         };
 
         let caps_b = checker_b.get_capabilities().clone();
         checker_b.deinit();
 
-        let lang = language.unwrap_or_else(|| "unknown".to_string());
         display::render_diff(
             server_path,
-            &results,
+            results,
             &caps_a,
             diff_path,
             &results_b,
             &caps_b,
-            &lang,
+            language.as_deref().unwrap_or("unknown"),
         );
-        return;
+        return std::ops::ControlFlow::Break(());
     }
-
-    health_checker.deinit();
-
-    display::render_table(
-        &results,
-        server_path.clone(),
-        language.unwrap(),
-        json_output,
-    );
+    std::ops::ControlFlow::Continue(())
 }
 
 fn print_usage() {
