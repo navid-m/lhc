@@ -54,7 +54,12 @@ pub fn render_header(server_path: &str, language: &str, table_width: usize) {
     println!("{}", starter_box);
 }
 
-pub fn render_table(results: &[CheckResult], server_path: String, language: String, json_output: bool) {
+pub fn render_table(
+    results: &[CheckResult],
+    server_path: String,
+    language: String,
+    json_output: bool,
+) {
     if json_output {
         render_json(results, server_path, language);
         return;
