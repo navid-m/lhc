@@ -9,13 +9,14 @@ pub fn run_and_show_diff_checks(
     diff_server: Option<String>,
     health_checker: &mut HealthChecker,
     results: &Vec<crate::checker::CheckResult>,
+    dserver_args: Vec<String>,
 ) -> std::ops::ControlFlow<()> {
     if let Some(ref diff_path) = diff_server {
         let caps_a = health_checker.get_capabilities().clone();
         health_checker.deinit();
 
         let mut checker_b =
-            match HealthChecker::init(diff_path, &[], None, language.clone(), ref_file) {
+            match HealthChecker::init(diff_path, &dserver_args, None, language.clone(), ref_file) {
                 Ok(c) => c,
                 Err(e) => {
                     eprintln!("Failed to initialize diff server '{}': {}", diff_path, e);

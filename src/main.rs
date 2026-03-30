@@ -49,10 +49,12 @@ fn main() {
 
     let server_path = &args[1];
     let mut server_args: Vec<String> = Vec::new();
+    let mut dserver_args: Vec<String> = Vec::new();
     let mut enable_logging = false;
     let mut language: Option<String> = None;
     let mut ref_file: Option<String> = None;
     let mut lsp_flags: Option<String> = None;
+    let mut dlsp_flags: Option<String> = None;
     let mut json_output = false;
     let mut seen_required = false;
     let mut diff_server: Option<String> = None;
@@ -73,11 +75,25 @@ fn main() {
         } else if let Some(diff) = arg.strip_prefix("--diff=") {
             diff_server = Some(diff.to_string());
         }
+
+        if let Some(dlsp_fl) = arg.strip_prefix("--dlsp-flags=") {
+            if diff_server == None {
+                print_usage();
+                process::exit(1);
+            }
+            dlsp_flags = Some(dlsp_fl.to_string());
+        }
     }
 
     if let Some(flags) = lsp_flags {
         for flag in flags.split_whitespace() {
             server_args.push(flag.to_string());
+        }
+    }
+
+    if let Some(other_flags) = dlsp_flags {
+        for dflag in other_flags.split_whitespace() {
+            dserver_args.push(dflag.to_string());
         }
     }
 
@@ -139,6 +155,7 @@ fn main() {
         diff_server,
         &mut health_checker,
         &results,
+        dserver_args,
     ) {
         return;
     }
@@ -164,6 +181,7 @@ Options:
     --ref=<file>        Use a custom source file for testing
     --log               Write errors to lhc-server-timestamp.log file
     --lsp-flags="<f>"   Pass flags to the LSP server
+    --dlsp-flags="<f>"  Pass flags to the LSP server number two in the diff, must be used with --diff
     --diff=<server>     Compare latency and capabilities against another language server
     --list-langs        List all built-in languages
     --list-checks       List all capability checks that are carried out
