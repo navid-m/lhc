@@ -46,11 +46,14 @@ fn main() {
     let mut language: Option<String> = None;
     let mut ref_file: Option<String> = None;
     let mut lsp_flags: Option<String> = None;
+    let mut json_output = false;
     let mut seen_required = false;
 
     for arg in args[2..].iter() {
         if arg == "--log" {
             enable_logging = true;
+        } else if arg == "--json" {
+            json_output = true;
         } else if let Some(lang) = arg.strip_prefix("--lang=") {
             language = Some(lang.to_string());
             seen_required = true;
@@ -116,7 +119,12 @@ fn main() {
 
     health_checker.deinit();
 
-    display::render_table(&results, server_path.clone(), language.unwrap());
+    display::render_table(
+        &results,
+        server_path.clone(),
+        language.unwrap(),
+        json_output,
+    );
 }
 
 fn print_usage() {
@@ -132,6 +140,7 @@ Options:
     --lsp-flags="<f>"   Pass flags to the LSP server
     --list-langs        List all built-in languages
     --version           Display the version of lhc
+    --json              Output results as JSON
     --help              Show this help message
 
 For example:

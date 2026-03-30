@@ -2,12 +2,39 @@ use crate::checker::{CheckResult, CheckStatus};
 use comfy_table::modifiers::UTF8_SOLID_INNER_BORDERS;
 use comfy_table::presets::UTF8_HORIZONTAL_ONLY;
 use comfy_table::{Cell, Color, ContentArrangement, Table};
+use serde::Serialize;
 
 const SUMMARY_TABLE_OFFSET: usize = 32;
 const ICON_PASS: &str = "✓";
 const ICON_FAIL: &str = "✗";
 const ICON_SKIP: &str = "○";
-const ICON_TIME: &str = "◌";
+const ICON_TIME: &str = "◷";
+
+#[derive(Serialize)]
+struct JsonResult {
+    server: String,
+    language: String,
+    healthy: bool,
+    summary: Summary,
+    checks: Vec<JsonCheckResult>,
+}
+
+#[derive(Serialize)]
+struct Summary {
+    passed: usize,
+    failed: usize,
+    timed_out: usize,
+    skipped: usize,
+}
+
+#[derive(Serialize)]
+struct JsonCheckResult {
+    name: &'static str,
+    method: &'static str,
+    status: String,
+    detail: String,
+    duration_ms: i64,
+}
 
 pub fn render_header(server_path: &str, language: &str, table_width: usize) {
     let mut starter_box = Table::new();
@@ -27,7 +54,12 @@ pub fn render_header(server_path: &str, language: &str, table_width: usize) {
     println!("{}", starter_box);
 }
 
-pub fn render_table(results: &[CheckResult], server_path: String, language: String) {
+pub fn render_table(results: &[CheckResult], server_path: String, language: String, json_output: bool) {
+    if json_output {
+        render_json(results, server_path, language);
+        return;
+    }
+
     let mut passed: usize = 0;
     let mut failed: usize = 0;
     let mut skipped: usize = 0;
@@ -142,4 +174,47 @@ pub fn render_table(results: &[CheckResult], server_path: String, language: Stri
         });
 
     println!("{}", health_box);
+}
+
+fn render_json(results: &[CheckResult], server_path: String, language: String) {
+    let mut passed: usize = 0;
+    let mut failed: usize = 0;
+    let mut skipped: usize = 0;
+    let mut timed_out: usize = 0;
+
+    let checks: Vec<JsonCheckResult> = results
+        .iter()
+        .map(|r| {
+            match r.status {
+                CheckStatus::Passed => passed += 1,
+                CheckStatus::Failed => failed += 1,
+                CheckStatus::Skipped => skipped += 1,
+                CheckStatus::Timeout => timed_out += 1,
+            }
+            JsonCheckResult {
+                name: r.name,
+                method: r.method,
+                status: r.status.as_str().to_string(),
+                detail: r.detail.clone(),
+                duration_ms: r.duration_ms,
+            }
+        })
+        .collect();
+
+    let healthy = failed == 0 && timed_out == 0;
+
+    let json_result = JsonResult {
+        server: server_path,
+        language,
+        healthy,
+        summary: Summary {
+            passed,
+            failed,
+            timed_out,
+            skipped,
+        },
+        checks,
+    };
+
+    println!("{}", serde_json::to_string_pretty(&json_result).unwrap());
 }
