@@ -147,7 +147,7 @@ fn print_usage() {
     eprintln!(
         r#"lhc - An LSP Server Health Checker
 
-Usage: lhc <lsp-server> [--log] [--lang=<lang>] [--ref=<file>] [--lsp-flags="<flags>"] [--diff=<server>] [--list-langs]
+Usage: lhc <lsp-server> [options]
 
 Options:
     --lang=<lang>       Use a language-specific sample (e.g. csharp, c...)
@@ -161,11 +161,11 @@ Options:
     --help              Show this help message
 
 For example:
-    lhc clangd --lang=c --diff=ccls --log
-    lhc liger --lang=crystal
-    lhc zls --lang=zig
-    lhc rust-analyzer --lang=rust --lsp-flags="--stdio"
-    lhc clangd --ref=/path/to/test.cpp --log"#,
+    $ lhc clangd --lang=c --diff=ccls --log
+    $ lhc liger --lang=crystal
+    $ lhc zls --lang=zig
+    $ lhc rust-analyzer --lang=rust --lsp-flags="--stdio"
+    $ lhc clangd --ref=/path/to/test.cpp --log"#,
     );
 }
 
