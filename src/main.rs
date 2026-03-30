@@ -161,6 +161,7 @@ Options:
     --lsp-flags="<f>"   Pass flags to the LSP server
     --diff=<server>     Compare latency and capabilities against another language server
     --list-langs        List all built-in languages
+    --list-checks       List all capability checks that are carried out
     --version           Display the version of lhc
     --json              Output results as JSON
     --help              Show this help message
