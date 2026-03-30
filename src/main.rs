@@ -48,6 +48,7 @@ fn main() {
     let mut lsp_flags: Option<String> = None;
     let mut json_output = false;
     let mut seen_required = false;
+    let mut diff_server: Option<String> = None;
 
     for arg in args[2..].iter() {
         if arg == "--log" {
@@ -62,6 +63,8 @@ fn main() {
             seen_required = true;
         } else if let Some(flags) = arg.strip_prefix("--lsp-flags=") {
             lsp_flags = Some(flags.to_string());
+        } else if let Some(diff) = arg.strip_prefix("--diff=") {
+            diff_server = Some(diff.to_string());
         }
     }
 
@@ -100,7 +103,7 @@ fn main() {
         &server_args,
         log_file_path,
         language.clone(),
-        ref_file,
+        ref_file.clone(),
     ) {
         Ok(checker) => checker,
         Err(e) => {
@@ -117,6 +120,43 @@ fn main() {
         }
     };
 
+    if let Some(ref diff_path) = diff_server {
+        let caps_a = health_checker.get_capabilities().clone();
+        health_checker.deinit();
+
+        let mut checker_b =
+            match HealthChecker::init(diff_path, &[], None, language.clone(), ref_file) {
+                Ok(c) => c,
+                Err(e) => {
+                    eprintln!("Failed to initialize diff server '{}': {}", diff_path, e);
+                    process::exit(1);
+                }
+            };
+
+        let results_b = match checker_b.run_all_checks() {
+            Ok(r) => r,
+            Err(e) => {
+                eprintln!("Failed to run checks on diff server: {}", e);
+                process::exit(1);
+            }
+        };
+
+        let caps_b = checker_b.get_capabilities().clone();
+        checker_b.deinit();
+
+        let lang = language.unwrap_or_else(|| "unknown".to_string());
+        display::render_diff(
+            server_path,
+            &results,
+            &caps_a,
+            diff_path,
+            &results_b,
+            &caps_b,
+            &lang,
+        );
+        return;
+    }
+
     health_checker.deinit();
 
     display::render_table(
@@ -131,20 +171,21 @@ fn print_usage() {
     eprintln!(
         r#"lhc - LSP Server Health Checker
 
-Usage: lhc <lsp-server> [--log] [--lang=<lang>] [--ref=<file>] [--lsp-flags="<flags>"] [--list-langs]
+Usage: lhc <lsp-server> [--log] [--lang=<lang>] [--ref=<file>] [--lsp-flags="<flags>"] [--diff=<server>] [--list-langs]
 
 Options:
     --lang=<lang>       Use a language-specific sample (e.g. rust, c, cpp, etc...)
     --ref=<file>        Use a custom source file for testing
-    --log               Write errors to lhc-<timestamp>.log file
+    --log               Write errors to lhc-server-timestamp.log file
     --lsp-flags="<f>"   Pass flags to the LSP server
+    --diff=<server>     Compare latency and capabilities against another language server
     --list-langs        List all built-in languages
     --version           Display the version of lhc
     --json              Output results as JSON
     --help              Show this help message
 
 For example:
-    lhc clangd --lang=c --log
+    lhc clangd --lang=c --diff=ccls --log
     lhc liger --lang=crystal
     lhc zls --lang=zig
     lhc rust-analyzer --lang=rust --lsp-flags="--stdio"

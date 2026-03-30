@@ -1,7 +1,7 @@
 use crate::languages::LanguageSample;
 use crate::lsp::{Client, ServerCapabilities};
 use indicatif::{ProgressBar, ProgressStyle};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::fs::File;
 use std::io::{BufWriter, Read, Write};
 use std::time::{Duration, Instant};
@@ -186,6 +186,11 @@ impl HealthChecker {
             progress_bar: None,
         })
     }
+
+    pub fn get_capabilities(&self) -> &crate::lsp::ServerCapabilities {
+        &self.capabilities
+    }
+
     pub fn deinit(&mut self) {
         if let Some(pb) = &self.progress_bar {
             pb.finish_and_clear();
