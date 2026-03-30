@@ -145,6 +145,14 @@ impl Client {
     }
 
     pub fn send_request(&mut self, method: &str, params: Option<Value>) -> std::io::Result<i64> {
+        if let Ok(Some(status)) = self.child.try_wait() {
+            let code = status.code().unwrap_or(-1);
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::BrokenPipe,
+                format!("LSP server exited unexpectedly with code {}", code),
+            ));
+        }
+
         let id = self.next_id;
         self.next_id += 1;
 
@@ -165,6 +173,14 @@ impl Client {
         method: &str,
         params: Option<Value>,
     ) -> std::io::Result<()> {
+        if let Ok(Some(status)) = self.child.try_wait() {
+            let code = status.code().unwrap_or(-1);
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::BrokenPipe,
+                format!("LSP server exited unexpectedly with code {}", code),
+            ));
+        }
+
         let notification = JsonRpcNotification {
             jsonrpc: "2.0".to_string(),
             method: method.to_string(),
@@ -176,14 +192,21 @@ impl Client {
         Ok(())
     }
 
-    fn send_raw(&mut self, content: &str) -> std::io::Result<()> {        
+    fn send_raw(&mut self, content: &str) -> std::io::Result<()> {
+        if let Ok(Some(_)) = self.child.try_wait() {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::BrokenPipe,
+                "LSP server process exited",
+            ));
+        }
+
         let stdin = self.child.stdin.as_mut().ok_or(std::io::Error::new(
             std::io::ErrorKind::BrokenPipe,
             "No stdin",
         ))?;
 
         let header = format!("Content-Length: {}\r\n\r\n", content.len());
-        
+
         stdin.write_all(header.as_bytes())?;
         stdin.write_all(content.as_bytes())?;
         stdin.flush()?;
@@ -204,13 +227,9 @@ impl Client {
             }
 
             let process_exited = match self.child.try_wait() {
-                Ok(Some(_)) => {
-                    true
-                }
+                Ok(Some(_)) => true,
                 Ok(None) => false,
-                Err(_) => {
-                    false
-                }
+                Err(_) => false,
             };
 
             if let Some(stdout) = self.child.stdout.as_mut() {
@@ -250,9 +269,7 @@ impl Client {
     fn try_parse_message(&mut self) -> std::io::Result<Option<Value>> {
         let data = &self.read_buf[..];
         let sep = match memmem::find(data, b"\r\n\r\n") {
-            Some(pos) => {
-                pos
-            }
+            Some(pos) => pos,
             None => {
                 return Ok(None);
             }
@@ -274,16 +291,14 @@ impl Client {
             .parse()
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
 
-
         let body_start = sep + 4;
         if data.len() < body_start + content_length {
             return Ok(None);
         }
 
         let body = &data[body_start..body_start + content_length];
-        let value: Value = serde_json::from_slice(body).map_err(|e| {
-            std::io::Error::new(std::io::ErrorKind::InvalidData, e)
-        })?;
+        let value: Value = serde_json::from_slice(body)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
 
         self.read_buf.drain(..body_start + content_length);
 
@@ -296,9 +311,7 @@ impl Client {
         while Instant::now() < deadline {
             let remaining = deadline.saturating_duration_since(Instant::now());
             let msg = match self.read_message(remaining)? {
-                Some(m) => {
-                    m
-                }
+                Some(m) => m,
                 None => {
                     return Ok(None);
                 }
@@ -321,12 +334,18 @@ impl Client {
             }
         }
 
-        eprintln!("Timeout waiting for response id: {}", id);
         Ok(None)
     }
 
     pub fn deinit(&mut self) {
         let _ = self.child.kill();
         let _ = self.child.wait();
+    }
+
+    pub fn is_alive(&mut self) -> bool {
+        match self.child.try_wait() {
+            Ok(None) => true,
+            _ => false,
+        }
     }
 }

@@ -5,6 +5,7 @@ mod lsp;
 mod windows;
 
 use checker::HealthChecker;
+use std::collections::HashSet;
 use std::env;
 use std::process;
 
@@ -133,11 +134,72 @@ fn main() {
                 }
             };
 
+        let caps_b = checker_b.get_capabilities().clone();
         let results_b = match checker_b.run_all_checks() {
             Ok(r) => r,
             Err(e) => {
                 eprintln!("Failed to run checks on diff server: {}", e);
-                process::exit(1);
+                eprintln!("Continuing with partial results...");
+
+                let mut partial_results = checker_b.results.clone();
+                use checker::CheckResult;
+                use checker::CheckStatus;
+                let remaining_checks = [
+                    ("Hover", "textDocument/hover"),
+                    ("Signature Help", "textDocument/signatureHelp"),
+                    ("Completion", "textDocument/completion"),
+                    ("Go to Definition", "textDocument/definition"),
+                    ("Type Definition", "textDocument/typeDefinition"),
+                    ("Implementation", "textDocument/implementation"),
+                    ("Find References", "textDocument/references"),
+                    ("Document Symbols", "textDocument/documentSymbol"),
+                    ("Workspace Symbols", "workspace/symbol"),
+                    ("Formatting", "textDocument/formatting"),
+                    ("Code Action", "textDocument/codeAction"),
+                    ("Rename", "textDocument/rename"),
+                    ("Prepare Rename", "textDocument/prepareRename"),
+                    ("Inlay Hint", "textDocument/inlayHint"),
+                    ("Code Lens", "textDocument/codeLens"),
+                    ("Semantic Tokens", "textDocument/semanticTokens/full"),
+                    ("Folding Range", "textDocument/foldingRange"),
+                    ("Linked Editing Range", "textDocument/linkedEditingRange"),
+                    ("Selection Range", "textDocument/selectionRange"),
+                    ("Document Highlight", "textDocument/documentHighlight"),
+                    ("DidChangeConfiguration", "workspace/didChangeConfiguration"),
+                    (
+                        "DidChangeWorkspaceFolders",
+                        "workspace/didChangeWorkspaceFolders",
+                    ),
+                    ("Execute Command", "workspace/executeCommand"),
+                    ("Shutdown", "shutdown"),
+                ];
+
+                let existing_names: HashSet<_> = partial_results.iter().map(|r| r.name).collect();
+
+                for (name, method) in &remaining_checks {
+                    if !existing_names.contains(name) {
+                        partial_results.push(CheckResult {
+                            name,
+                            method,
+                            status: CheckStatus::Failed,
+                            detail: "server crashed".to_string(),
+                            duration_ms: 0,
+                        });
+                    }
+                }
+
+                checker_b.deinit();
+                let lang = language.unwrap_or_else(|| "unknown".to_string());
+                display::render_diff(
+                    server_path,
+                    &results,
+                    &caps_a,
+                    diff_path,
+                    &partial_results,
+                    &caps_b,
+                    &lang,
+                );
+                return;
             }
         };
 

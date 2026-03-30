@@ -57,7 +57,7 @@ pub struct CheckResult {
 pub struct HealthChecker {
     client: Client,
     capabilities: ServerCapabilities,
-    results: Vec<CheckResult>,
+    pub results: Vec<CheckResult>,
     log_writer: Option<BufWriter<File>>,
     server_name: String,
     sample: LanguageSample,
@@ -371,6 +371,20 @@ impl HealthChecker {
             .send_notification("textDocument/didOpen", Some(params))?;
 
         std::thread::sleep(Duration::from_millis(200));
+
+        if !self.client.is_alive() {
+            self.record(
+                "Open Document",
+                "textDocument/didOpen",
+                CheckStatus::Failed,
+                "server crashed after notification",
+                t0.elapsed().as_millis() as i64,
+            );
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::BrokenPipe,
+                "LSP server crashed during textDocument/didOpen",
+            ));
+        }
 
         let dt = t0.elapsed().as_millis() as i64;
         self.record(
@@ -1047,8 +1061,8 @@ impl HealthChecker {
         let params = json!({
             "query": "add"
         });
-        let id = self.client.send_request("workspace/symbol", Some(params))?;
 
+        let id = self.client.send_request("workspace/symbol", Some(params))?;
         let resp = match self
             .client
             .read_response(id, Duration::from_millis(TIMEOUT_MS))?

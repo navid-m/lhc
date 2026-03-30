@@ -374,9 +374,10 @@ pub fn render_diff(
     let mut header_box = Table::new();
     header_box.load_preset(UTF8_HORIZONTAL_ONLY);
     header_box.add_row(vec![Cell::new(format!(
-        "Diff: {} vs {}  (language: {})",
-        server_a, server_b, language
+        "Diff: {} vs {}",
+        server_a, server_b
     ))]);
+    header_box.add_row(vec![Cell::new(format!("Language: {}", language))]);
     println!("{}", header_box);
     println!();
 
@@ -391,7 +392,7 @@ pub fn render_diff(
             Cell::new(format!("{} ms", server_a)).fg(Color::Cyan),
             Cell::new(format!("{} status", server_b)).fg(Color::Cyan),
             Cell::new(format!("{} ms", server_b)).fg(Color::Cyan),
-            Cell::new("Δ ms").fg(Color::Cyan),
+            Cell::new("diff ms").fg(Color::Cyan),
         ]);
 
     let lookup_b: std::collections::HashMap<&str, &CheckResult> =
