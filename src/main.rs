@@ -2,11 +2,11 @@ mod checker;
 mod display;
 mod languages;
 mod lsp;
+mod run_bridge;
 mod windows;
 
 use checker::HealthChecker;
-use checker::LEFTOVER_CHECKS;
-use std::collections::HashSet;
+use run_bridge::run_and_show_diff_checks;
 use std::env;
 use std::process;
 
@@ -143,86 +143,14 @@ fn main() {
     );
 }
 
-fn run_and_show_diff_checks(
-    server_path: &String,
-    language: &Option<String>,
-    ref_file: Option<String>,
-    diff_server: Option<String>,
-    health_checker: &mut HealthChecker,
-    results: &Vec<checker::CheckResult>,
-) -> std::ops::ControlFlow<()> {
-    if let Some(ref diff_path) = diff_server {
-        let caps_a = health_checker.get_capabilities().clone();
-        health_checker.deinit();
-
-        let mut checker_b =
-            match HealthChecker::init(diff_path, &[], None, language.clone(), ref_file) {
-                Ok(c) => c,
-                Err(e) => {
-                    eprintln!("Failed to initialize diff server '{}': {}", diff_path, e);
-                    process::exit(1);
-                }
-            };
-
-        let caps_b = checker_b.get_capabilities().clone();
-        let results_b = match checker_b.run_all_checks() {
-            Ok(r) => r,
-            Err(_) => {
-                let mut partial_results = checker_b.results.clone();
-                let existing_names: HashSet<_> = partial_results.iter().map(|r| r.name).collect();
-
-                for (name, method) in &LEFTOVER_CHECKS {
-                    if !existing_names.contains(name) {
-                        partial_results.push(checker::CheckResult {
-                            name,
-                            method,
-                            status: checker::CheckStatus::Failed,
-                            detail: "server crashed".to_string(),
-                            duration_ms: 0,
-                        });
-                    }
-                }
-
-                checker_b.deinit();
-                let lang = language.as_deref().unwrap_or("unknown");
-                display::render_diff(
-                    server_path,
-                    results,
-                    &caps_a,
-                    diff_path,
-                    &partial_results,
-                    &caps_b,
-                    &lang,
-                );
-                return std::ops::ControlFlow::Break(());
-            }
-        };
-
-        let caps_b = checker_b.get_capabilities().clone();
-        checker_b.deinit();
-
-        display::render_diff(
-            server_path,
-            results,
-            &caps_a,
-            diff_path,
-            &results_b,
-            &caps_b,
-            language.as_deref().unwrap_or("unknown"),
-        );
-        return std::ops::ControlFlow::Break(());
-    }
-    std::ops::ControlFlow::Continue(())
-}
-
 fn print_usage() {
     eprintln!(
-        r#"lhc - LSP Server Health Checker
+        r#"lhc - An LSP Server Health Checker
 
 Usage: lhc <lsp-server> [--log] [--lang=<lang>] [--ref=<file>] [--lsp-flags="<flags>"] [--diff=<server>] [--list-langs]
 
 Options:
-    --lang=<lang>       Use a language-specific sample (e.g. rust, c, cpp, etc...)
+    --lang=<lang>       Use a language-specific sample (e.g. csharp, c...)
     --ref=<file>        Use a custom source file for testing
     --log               Write errors to lhc-server-timestamp.log file
     --lsp-flags="<f>"   Pass flags to the LSP server
