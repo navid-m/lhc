@@ -33,6 +33,11 @@ fn main() {
             process::exit(0);
         }
 
+        if args[1] == "--list-checks" {
+            print_checked_capabilities();
+            process::exit(0);
+        }
+
         if args[1] == "--version" || args[1] == "-v" {
             println!(
                 "v{}\nBy Navid M (C) - GPL-3.0-only",
@@ -167,6 +172,19 @@ For example:
     $ lhc rust-analyzer --lang=rust --lsp-flags="--stdio"
     $ lhc clangd --ref=/path/to/test.cpp --log"#,
     );
+}
+
+fn print_checked_capabilities() {
+    let mut cap_table = comfy_table::Table::new();
+
+    cap_table.load_preset(comfy_table::presets::UTF8_BORDERS_ONLY);
+    cap_table.set_header(comfy_table::Row::from(vec!["Capability", "Name"]));
+
+    for (k, v) in checker::LEFTOVER_CHECKS {
+        cap_table.add_row(vec![comfy_table::Cell::new(k), comfy_table::Cell::new(v)]);
+    }
+
+    println!("{}", cap_table);
 }
 
 fn print_supported_languages() {
