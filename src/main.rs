@@ -169,16 +169,14 @@ fn run_and_show_diff_checks(
             Ok(r) => r,
             Err(_) => {
                 let mut partial_results = checker_b.results.clone();
-                use checker::CheckResult;
-                use checker::CheckStatus;
                 let existing_names: HashSet<_> = partial_results.iter().map(|r| r.name).collect();
 
                 for (name, method) in &LEFTOVER_CHECKS {
                     if !existing_names.contains(name) {
-                        partial_results.push(CheckResult {
+                        partial_results.push(checker::CheckResult {
                             name,
                             method,
-                            status: CheckStatus::Failed,
+                            status: checker::CheckStatus::Failed,
                             detail: "server crashed".to_string(),
                             duration_ms: 0,
                         });
