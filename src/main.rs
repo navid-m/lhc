@@ -100,7 +100,12 @@ fn main() {
 
     let log_file_path = if enable_logging {
         let timestamp = chrono::Local::now().format("%Y%m%d-%H%M%S").to_string();
-        Some(format!("lhc-{}-{}.log", clean_server_path, timestamp))
+        Some(format!(
+            "lhc-{}-{}-{}.log",
+            clean_server_path,
+            language.clone().unwrap(),
+            timestamp
+        ))
     } else {
         None
     };
