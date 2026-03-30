@@ -122,7 +122,7 @@ fn main() {
         }
     };
 
-    if let std::ops::ControlFlow::Break(_) = run_diff_checks(
+    if let std::ops::ControlFlow::Break(_) = run_and_show_diff_checks(
         server_path,
         &language,
         ref_file,
@@ -143,7 +143,7 @@ fn main() {
     );
 }
 
-fn run_diff_checks(
+fn run_and_show_diff_checks(
     server_path: &String,
     language: &Option<String>,
     ref_file: Option<String>,
