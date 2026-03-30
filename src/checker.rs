@@ -7,7 +7,7 @@ use std::io::{BufWriter, Read, Write};
 use std::time::{Duration, Instant};
 
 pub const TIMEOUT_MS: u64 = 5000;
-pub const LEFTOVER_CHECKS: [(&str, &str); 42] = [
+pub const LEFTOVER_CHECKS: [(&str, &str); 46] = [
     ("Hover", "textDocument/hover"),
     ("Signature Help", "textDocument/signatureHelp"),
     ("Completion", "textDocument/completion"),
@@ -53,6 +53,10 @@ pub const LEFTOVER_CHECKS: [(&str, &str); 42] = [
         "workspace/didChangeWorkspaceFolders",
     ),
     ("Execute Command", "workspace/executeCommand"),
+    ("Open Document", "textDocument/didOpen"),
+    ("Initialized", "initialized"),
+    ("Shutdown", "shutdown"),
+    ("Exit", "exit"),
 ];
 
 fn extract_error_message(resp: &Value) -> String {
