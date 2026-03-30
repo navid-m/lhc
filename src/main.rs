@@ -181,7 +181,7 @@ Options:
     --ref=<file>        Use a custom source file for testing
     --log               Write errors to lhc-server-timestamp.log file
     --lsp-flags="<f>"   Pass flags to the LSP server
-    --dlsp-flags="<f>"  Pass flags to the LSP server number two in the diff, must be used with --diff
+    --dlsp-flags="<f>"  Pass flags to LSP server number two in the diff, must be used with --diff
     --diff=<server>     Compare latency and capabilities against another language server
     --list-langs        List all built-in languages
     --list-checks       List all capability checks that are carried out
