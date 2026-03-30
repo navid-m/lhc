@@ -48,6 +48,23 @@ pub struct ServerCapabilities {
     pub execute_command_provider: bool,
     pub did_change_configuration_provider: bool,
     pub did_change_workspace_folders_provider: bool,
+    pub text_document_sync_incremental: bool,
+    pub text_document_sync_full: bool,
+    pub will_save_provider: bool,
+    pub will_save_wait_until_provider: bool,
+    pub did_save_provider: bool,
+    pub workspace_configuration_provider: bool,
+    pub did_change_watched_files_provider: bool,
+    pub completion_item_resolve_provider: bool,
+    pub code_lens_resolve_provider: bool,
+    pub document_link_provider: bool,
+    pub document_link_resolve_provider: bool,
+    pub color_provider: bool,
+    pub declaration_provider: bool,
+    pub type_hierarchy_provider: bool,
+    pub call_hierarchy_provider: bool,
+    pub semantic_tokens_range_provider: bool,
+    pub inline_completion_provider: bool,
 }
 
 impl ServerCapabilities {
@@ -105,8 +122,109 @@ impl ServerCapabilities {
                 if let Some(sym) = ws_obj.get("symbol") {
                     caps.workspace_symbol_provider = !sym.is_null();
                 }
+                if let Some(cfg) = ws_obj.get("fileOperations") {
+                    caps.workspace_configuration_provider = !cfg.is_null();
+                }
             }
         }
+        if let Some(sync) = caps_obj.get("textDocumentSync") {
+            match sync {
+                Value::Number(n) => {
+                    let kind = n.as_u64().unwrap_or(0);
+                    caps.text_document_sync_full = kind == 1 || kind == 2;
+                    caps.text_document_sync_incremental = kind == 2;
+                    caps.will_save_provider = kind > 0;
+                    caps.will_save_wait_until_provider = kind > 0;
+                    caps.did_save_provider = kind > 0;
+                }
+                Value::Object(sync_obj) => {
+                    let change = sync_obj.get("change").and_then(|v| v.as_u64()).unwrap_or(0);
+                    caps.text_document_sync_full = change == 1 || change == 2;
+                    caps.text_document_sync_incremental = change == 2;
+                    caps.will_save_provider = sync_obj
+                        .get("willSave")
+                        .and_then(|v| v.as_bool())
+                        .unwrap_or(false);
+                    caps.will_save_wait_until_provider = sync_obj
+                        .get("willSaveWaitUntil")
+                        .and_then(|v| v.as_bool())
+                        .unwrap_or(false);
+                    caps.did_save_provider = sync_obj
+                        .get("save")
+                        .map(|v| !v.is_null() && v != &Value::Bool(false))
+                        .unwrap_or(false);
+                }
+                _ => {}
+            }
+        }
+
+        caps.did_change_watched_files_provider = caps_obj
+            .get("workspace")
+            .and_then(|w| w.as_object())
+            .and_then(|w| w.get("didChangeWatchedFiles"))
+            .map(|v| !v.is_null())
+            .unwrap_or(false);
+
+        if !caps.workspace_configuration_provider {
+            caps.workspace_configuration_provider = caps_obj
+                .get("workspace")
+                .and_then(|w| w.as_object())
+                .and_then(|w| w.get("workspaceCapabilities"))
+                .map(|v| !v.is_null())
+                .unwrap_or(false);
+        }
+
+        caps.completion_item_resolve_provider = caps_obj
+            .get("completionProvider")
+            .and_then(|cp| cp.as_object())
+            .and_then(|cp| cp.get("resolveProvider"))
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
+
+        caps.code_lens_resolve_provider = caps_obj
+            .get("codeLensProvider")
+            .and_then(|cl| cl.as_object())
+            .and_then(|cl| cl.get("resolveProvider"))
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
+
+        caps.document_link_provider = caps_obj.get("documentLinkProvider").is_some()
+            && !caps_obj["documentLinkProvider"].is_null();
+        caps.document_link_resolve_provider = caps_obj
+            .get("documentLinkProvider")
+            .and_then(|dl| dl.as_object())
+            .and_then(|dl| dl.get("resolveProvider"))
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
+
+        caps.color_provider = caps_obj
+            .get("colorProvider")
+            .map(|v| !v.is_null() && v != &Value::Bool(false))
+            .unwrap_or(false);
+
+        caps.declaration_provider = is_truthy(caps_obj.get("declarationProvider"));
+
+        caps.type_hierarchy_provider = caps_obj
+            .get("typeHierarchyProvider")
+            .map(|v| !v.is_null() && v != &Value::Bool(false))
+            .unwrap_or(false);
+
+        caps.call_hierarchy_provider = caps_obj
+            .get("callHierarchyProvider")
+            .map(|v| !v.is_null() && v != &Value::Bool(false))
+            .unwrap_or(false);
+
+        caps.semantic_tokens_range_provider = caps_obj
+            .get("semanticTokensProvider")
+            .and_then(|st| st.as_object())
+            .and_then(|st| st.get("range"))
+            .map(|v| !v.is_null() && v != &Value::Bool(false))
+            .unwrap_or(false);
+
+        caps.inline_completion_provider = caps_obj
+            .get("inlineCompletionProvider")
+            .map(|v| !v.is_null() && v != &Value::Bool(false))
+            .unwrap_or(false);
 
         caps
     }

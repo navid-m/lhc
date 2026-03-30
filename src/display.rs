@@ -238,6 +238,7 @@ struct CapabilityEntry {
 
 fn capability_entries(a: &ServerCapabilities, b: &ServerCapabilities) -> Vec<CapabilityEntry> {
     vec![
+        // ── Original capabilities ──────────────────────────────────────
         CapabilityEntry {
             label: "Hover",
             a: a.hover_provider,
@@ -357,6 +358,92 @@ fn capability_entries(a: &ServerCapabilities, b: &ServerCapabilities) -> Vec<Cap
             label: "Did Change Workspace Folders",
             a: a.did_change_workspace_folders_provider,
             b: b.did_change_workspace_folders_provider,
+        },
+        // ── New capabilities ───────────────────────────────────────────
+        CapabilityEntry {
+            label: "DidChange Full",
+            a: a.text_document_sync_full,
+            b: b.text_document_sync_full,
+        },
+        CapabilityEntry {
+            label: "DidChange Incremental",
+            a: a.text_document_sync_incremental,
+            b: b.text_document_sync_incremental,
+        },
+        CapabilityEntry {
+            label: "WillSave",
+            a: a.will_save_provider,
+            b: b.will_save_provider,
+        },
+        CapabilityEntry {
+            label: "WillSaveWaitUntil",
+            a: a.will_save_wait_until_provider,
+            b: b.will_save_wait_until_provider,
+        },
+        CapabilityEntry {
+            label: "DidSave",
+            a: a.did_save_provider,
+            b: b.did_save_provider,
+        },
+        CapabilityEntry {
+            label: "Workspace Configuration",
+            a: a.workspace_configuration_provider,
+            b: b.workspace_configuration_provider,
+        },
+        CapabilityEntry {
+            label: "Did Change Watched Files",
+            a: a.did_change_watched_files_provider,
+            b: b.did_change_watched_files_provider,
+        },
+        CapabilityEntry {
+            label: "Completion Item Resolve",
+            a: a.completion_item_resolve_provider,
+            b: b.completion_item_resolve_provider,
+        },
+        CapabilityEntry {
+            label: "Code Lens Resolve",
+            a: a.code_lens_resolve_provider,
+            b: b.code_lens_resolve_provider,
+        },
+        CapabilityEntry {
+            label: "Document Link",
+            a: a.document_link_provider,
+            b: b.document_link_provider,
+        },
+        CapabilityEntry {
+            label: "Document Link Resolve",
+            a: a.document_link_resolve_provider,
+            b: b.document_link_resolve_provider,
+        },
+        CapabilityEntry {
+            label: "Color Provider",
+            a: a.color_provider,
+            b: b.color_provider,
+        },
+        CapabilityEntry {
+            label: "Go to Declaration",
+            a: a.declaration_provider,
+            b: b.declaration_provider,
+        },
+        CapabilityEntry {
+            label: "Type Hierarchy",
+            a: a.type_hierarchy_provider,
+            b: b.type_hierarchy_provider,
+        },
+        CapabilityEntry {
+            label: "Call Hierarchy",
+            a: a.call_hierarchy_provider,
+            b: b.call_hierarchy_provider,
+        },
+        CapabilityEntry {
+            label: "Semantic Tokens Range",
+            a: a.semantic_tokens_range_provider,
+            b: b.semantic_tokens_range_provider,
+        },
+        CapabilityEntry {
+            label: "Inline Completion",
+            a: a.inline_completion_provider,
+            b: b.inline_completion_provider,
         },
     ]
 }
