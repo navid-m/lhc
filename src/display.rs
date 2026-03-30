@@ -371,16 +371,6 @@ pub fn render_diff(
     caps_b: &ServerCapabilities,
     language: &str,
 ) {
-    let mut header_box = Table::new();
-    header_box.load_preset(UTF8_HORIZONTAL_ONLY);
-    header_box.add_row(vec![Cell::new(format!(
-        "Diff: {} vs {}",
-        server_a, server_b
-    ))]);
-    header_box.add_row(vec![Cell::new(format!("Language: {}", language))]);
-    println!("{}", header_box);
-    println!();
-
     let mut lat_table = Table::new();
     lat_table
         .load_preset(UTF8_HORIZONTAL_ONLY)
@@ -451,7 +441,33 @@ pub fn render_diff(
         ]);
     }
 
-    println!("{}", lat_table);
+    let table_str = lat_table.to_string();
+    let table_width = table_str
+        .lines()
+        .next()
+        .map(|line| line.chars().count())
+        .unwrap_or(132);
+
+    let mut header_box = Table::new();
+    header_box.load_preset(UTF8_HORIZONTAL_ONLY);
+    header_box.add_row(vec![Cell::new(format!(
+        "Diff: {} vs {}",
+        server_a, server_b
+    ))]);
+    header_box.add_row(vec![Cell::new(format!("Language: {}", language))]);
+
+    header_box
+        .column_mut(0)
+        .unwrap()
+        .set_constraint(comfy_table::ColumnConstraint::Boundaries {
+            lower: comfy_table::Width::Fixed(table_width as u16),
+            upper: comfy_table::Width::Fixed(table_width as u16),
+        });
+
+    println!("{}", header_box);
+    println!();
+
+    println!("{}", table_str);
     println!();
 
     let entries = capability_entries(caps_a, caps_b);
@@ -517,10 +533,8 @@ pub fn render_diff(
         if !only_a.is_empty() {
             summary_box.add_row(vec![
                 Cell::new(format!(
-                    "{} advertises but {} does not: {}",
-                    server_a,
-                    server_b,
-                    only_a.join(", ")
+                    "{} advertises some capabilities that {} does not.",
+                    server_a, server_b,
                 ))
                 .fg(Color::Yellow),
             ]);
@@ -528,10 +542,8 @@ pub fn render_diff(
         if !only_b.is_empty() {
             summary_box.add_row(vec![
                 Cell::new(format!(
-                    "{} advertises but {} does not: {}",
-                    server_b,
-                    server_a,
-                    only_b.join(", ")
+                    "{} advertises some capabilities that {} does not.",
+                    server_b, server_a,
                 ))
                 .fg(Color::Yellow),
             ]);
@@ -541,6 +553,15 @@ pub fn render_diff(
             "Both servers advertise the same capabilities.",
         )]);
     }
+
+    summary_box
+        .column_mut(0)
+        .unwrap()
+        .set_constraint(comfy_table::ColumnConstraint::Boundaries {
+            lower: comfy_table::Width::Fixed(table_width as u16),
+            upper: comfy_table::Width::Fixed(table_width as u16),
+        });
+
     println!("{}", summary_box);
 }
 
