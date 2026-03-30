@@ -7,6 +7,35 @@ use std::io::{BufWriter, Read, Write};
 use std::time::{Duration, Instant};
 
 pub const TIMEOUT_MS: u64 = 5000;
+pub const LEFTOVER_CHECKS: [(&str, &str); 24] = [
+    ("Hover", "textDocument/hover"),
+    ("Signature Help", "textDocument/signatureHelp"),
+    ("Completion", "textDocument/completion"),
+    ("Go to Definition", "textDocument/definition"),
+    ("Type Definition", "textDocument/typeDefinition"),
+    ("Implementation", "textDocument/implementation"),
+    ("Find References", "textDocument/references"),
+    ("Document Symbols", "textDocument/documentSymbol"),
+    ("Workspace Symbols", "workspace/symbol"),
+    ("Formatting", "textDocument/formatting"),
+    ("Code Action", "textDocument/codeAction"),
+    ("Rename", "textDocument/rename"),
+    ("Prepare Rename", "textDocument/prepareRename"),
+    ("Inlay Hint", "textDocument/inlayHint"),
+    ("Code Lens", "textDocument/codeLens"),
+    ("Semantic Tokens", "textDocument/semanticTokens/full"),
+    ("Folding Range", "textDocument/foldingRange"),
+    ("Linked Editing Range", "textDocument/linkedEditingRange"),
+    ("Selection Range", "textDocument/selectionRange"),
+    ("Document Highlight", "textDocument/documentHighlight"),
+    ("DidChangeConfiguration", "workspace/didChangeConfiguration"),
+    (
+        "DidChangeWorkspaceFolders",
+        "workspace/didChangeWorkspaceFolders",
+    ),
+    ("Execute Command", "workspace/executeCommand"),
+    ("Shutdown", "shutdown"),
+];
 
 fn extract_error_message(resp: &Value) -> String {
     if let Some(error) = resp.get("error") {
